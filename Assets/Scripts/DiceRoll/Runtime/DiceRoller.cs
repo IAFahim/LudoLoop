@@ -7,15 +7,12 @@ namespace DiceRoll.Runtime
     [RequireComponent(typeof(Rigidbody))]
     public class DiceRoller : MonoBehaviour
     {
-        [Header("Roll Settings")] 
-        [SerializeField] private float rollForce = 5f;
-        [SerializeField] private float torqueForce = 10f;
-        [SerializeField] private float upwardForce = 3f;
-        [SerializeField] private float rollHeight = 2f;
-        [SerializeField] private Vector3 direction;
-        [SerializeField] private bool initRoll;
-        
-        
+        [Header("Roll Settings")] [SerializeField]
+        private bool initRoll;
+
+        [SerializeField] private bool random = true;
+        [SerializeField] private RollConfig rollConfig = RollConfig.Default();
+
         [Header("Physics Settings")] [SerializeField]
         private Rigidbody rb;
 
@@ -31,7 +28,15 @@ namespace DiceRoll.Runtime
         public void Roll()
         {
             PlaceAgain();
-            AddForceInDirection(direction);
+            if (random)
+            {
+                RandomPhysis.DirectionTorque(out rollConfig.rotation, out rollConfig.torque);
+            }
+
+            AddForceInDirection(transform, rb,
+                rollConfig.rollForce, rollConfig.upwardForce, rollConfig.torqueForce,
+                rollConfig.direction, rollConfig.rotation, rollConfig.torque
+            );
         }
 
         [ContextMenu("PlaceAgain")]
@@ -46,26 +51,59 @@ namespace DiceRoll.Runtime
             {
                 Roll();
                 initRoll = false;
-            }   
+            }
         }
 
-        private void AddForceInDirection(Vector3 rollDirection)
+        private void AddForceInDirection(
+            Transform transform, Rigidbody rb,
+            in float rollForce, in float upwardForce, in float torqueForce,
+            in Vector3 rollDirection, in Quaternion rotation, in Vector3 torqueDirection
+        )
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            transform.rotation = rotation;
+            var force = rollDirection * rollForce + Vector3.up * upwardForce;
+            rb.AddForce(force, ForceMode.Impulse); 
+            var torque = torqueDirection * torqueForce;
+            rb.AddTorque(torque, ForceMode.Impulse);
+        }
+    }
 
-            transform.rotation = Random.rotation;
+    [Serializable]
+    public struct RollConfig
+    {
+        public float rollForce;
+        public float torqueForce;
+        public float upwardForce;
 
-            Vector3 force = rollDirection * rollForce + Vector3.up * upwardForce;
-            rb.AddForce(force, ForceMode.Impulse);
+        public Vector3 direction;
+        public Quaternion rotation;
+        public Vector3 torque;
 
-            Vector3 randomTorque = new Vector3(
+        public static RollConfig Default()
+        {
+            return new RollConfig()
+            {
+                rollForce = 15,
+                torqueForce = 2,
+                upwardForce = 3,
+                direction = new Vector3(0, 0, 1),
+                rotation = Quaternion.identity,
+                torque = Vector3.zero
+            };
+        }
+    }
+    
+    public static class RandomPhysis{
+        public static void DirectionTorque(out Quaternion rotation, out Vector3 torque)
+        {
+            rotation = Random.rotation;
+            torque = new Vector3(
                 Random.Range(-1f, 1f),
                 Random.Range(-1f, 1f),
                 Random.Range(-1f, 1f)
-            ).normalized * torqueForce;
-
-            rb.AddTorque(randomTorque, ForceMode.Impulse);
+            ).normalized;
         }
     }
 }

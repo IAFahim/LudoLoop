@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
-
 namespace Placements.Runtime
 {
     public class PawnPlacement : MonoBehaviour
     {
-        [FormerlySerializedAs("pawn")] public PawnComponent pawnComponent;
+        public PawnComponent pawnComponent;
         public float radius = .2f;
         public float startAngle = 45f;
         public float height = .51f;
