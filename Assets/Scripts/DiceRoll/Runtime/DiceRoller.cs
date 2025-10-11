@@ -35,10 +35,10 @@ namespace DiceRoll.Runtime
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             transform.rotation = config.rotation;
-            
+
             var force = config.direction * config.rollForce + Vector3.up * config.upwardForce;
             rb.AddForce(force, ForceMode.Impulse);
-            
+
             var torque = config.torque * config.torqueForce;
             rb.AddTorque(torque, ForceMode.Impulse);
         }
@@ -56,11 +56,36 @@ namespace DiceRoll.Runtime
     }
 
     [Serializable]
+    public struct Dice
+    {
+        public DiceSides diceSides;
+
+        public static Dice Default()
+        {
+            return new Dice
+            {
+                diceSides = DiceSides.Top
+            };
+        }
+    }
+
+    public enum DiceSides : byte
+    {
+        Front = 1,
+        Right = 2,
+        Top = 3,
+        Back = 4,
+        Left = 5,
+        Bottom = 6
+    }
+
+    [Serializable]
     public struct RollSettings
     {
         public bool roll;
         public bool randomize;
         public Vector3 spawnPosition;
+
         public static RollSettings Default()
         {
             return new RollSettings()
@@ -75,7 +100,7 @@ namespace DiceRoll.Runtime
     [RequireComponent(typeof(Rigidbody))]
     public class DiceRoller : MonoBehaviour
     {
-        public RollSettings rollSettings = RollSettings.Default(); 
+        public RollSettings rollSettings = RollSettings.Default();
         public RollConfig rollConfig = RollConfig.Default();
 
         private Rigidbody rb;

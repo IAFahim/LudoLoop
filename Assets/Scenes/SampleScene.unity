@@ -5127,10 +5127,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea2cbf9da2a54b38a9476eb0fc8daae2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceSystem.Runtime.DiceRoller
-  rollSettings:
-    roll: 1
-    randomize: 1
-    spawnPosition: {x: 0, y: 0, z: 0}
   rollConfig:
     rollForce: 15
     torqueForce: 2
@@ -5138,6 +5134,16 @@ MonoBehaviour:
     direction: {x: 0, y: 0, z: 1}
     rotation: {x: 0, y: 0, z: 0, w: 1}
     torque: {x: 0, y: 0, z: 0}
+  settleConfig:
+    velocityThreshold: 0.01
+    angularVelocityThreshold: 0.01
+    settleDelay: 0.5
+  randomize: 1
+  spawnPosition: {x: 0, y: 0, z: 0}
+  state:
+    hasSettled: 0
+    currentSide: 3
+    settleTimer: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
