@@ -55,42 +55,55 @@ namespace DiceRoll.Runtime
         }
     }
 
+    [Serializable]
+    public struct RollSettings
+    {
+        public bool roll;
+        public bool randomize;
+        public Vector3 spawnPosition;
+        public static RollSettings Default()
+        {
+            return new RollSettings()
+            {
+                roll = true,
+                randomize = true,
+                spawnPosition = Vector3.zero
+            };
+        }
+    }
+
     [RequireComponent(typeof(Rigidbody))]
     public class DiceRoller : MonoBehaviour
     {
-        [SerializeField] private bool roll = true;
-        [SerializeField] private bool randomize = true;
-        [SerializeField] private Vector3 spawnPosition;
-        [SerializeField] private RollConfig rollConfig = RollConfig.Default();
+        public RollSettings rollSettings = RollSettings.Default(); 
+        public RollConfig rollConfig = RollConfig.Default();
 
         private Rigidbody rb;
 
         private void Awake()
         {
             rb = GetComponent<Rigidbody>();
-            spawnPosition = transform.position;
+            rollSettings.spawnPosition = transform.position;
         }
 
         private void FixedUpdate()
         {
+            if (!rollSettings.roll) return;
             ResetPosition();
-            if (roll)
-            {
-                Roll();
-                roll = false;
-            }
+            Roll();
+            rollSettings.roll = false;
         }
 
         public void Roll()
         {
             ResetPosition();
-            var config = randomize ? DicePhysics.RandomizeConfig(rollConfig) : rollConfig;
+            var config = rollSettings.randomize ? DicePhysics.RandomizeConfig(rollConfig) : rollConfig;
             DicePhysics.ApplyRollForce(rb, transform, config);
         }
 
         public void ResetPosition()
         {
-            transform.position = spawnPosition;
+            transform.position = rollSettings.spawnPosition;
         }
     }
 }

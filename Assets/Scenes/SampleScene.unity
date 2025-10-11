@@ -669,6 +669,18 @@ PrefabInstance:
       propertyPath: height
       value: 1.55
       objectReference: {fileID: 0}
+    - target: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+      propertyPath: config.height
+      value: 1.55
+      objectReference: {fileID: 0}
+    - target: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+      propertyPath: config.radius
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+      propertyPath: pawnData.prefab
+      value: 
+      objectReference: {fileID: 7425773500103030453, guid: 4d3e461ebc5a247fd924ff36aa04daeb, type: 3}
     - target: {fileID: 6108104132278460849, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.200001
@@ -5115,15 +5127,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea2cbf9da2a54b38a9476eb0fc8daae2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceSystem.Runtime.DiceRoller
-  rollForce: 15
-  torqueForce: 2
-  upwardForce: 3
-  rollHeight: 2
-  direction: {x: 0, y: 0, z: 1}
-  initRoll: 1
-  rb: {fileID: 8227292239813526342}
-  showDebug: 1
-  restPosition: {x: 0, y: 4.06, z: -8.191}
+  rollSettings:
+    roll: 1
+    randomize: 1
+    spawnPosition: {x: 0, y: 0, z: 0}
+  rollConfig:
+    rollForce: 15
+    torqueForce: 2
+    upwardForce: 3
+    direction: {x: 0, y: 0, z: 1}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    torque: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
