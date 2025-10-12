@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
 namespace DiceRoll.Runtime
@@ -15,6 +16,8 @@ namespace DiceRoll.Runtime
         [Header("Configuration")] public RandomRollConfig randomRollConfig = RandomRollConfig.Default();
         public TurnSettings turnSettings = TurnSettings.Default();
         public HandConfig handConfig = HandConfig.Default();
+
+        public UnityEvent<byte> OnDiceSettled;
         
 
         private Rigidbody rb;
@@ -31,7 +34,6 @@ namespace DiceRoll.Runtime
             randomGenerator = new UnityRandomGenerator();
         }
 
-        // Allow injection for testing
         public void SetRandomGenerator(IRandomGenerator generator)
         {
             randomGenerator = generator;
@@ -114,7 +116,9 @@ namespace DiceRoll.Runtime
                     dice.currentSide = DiceRollLogic.DetectTopFace(physicsData.rotation);
                     rollState.state = DiceState.Settled;
 
-                    Debug.Log($"Dice settled on: {dice.currentSide} (Value: {(int)dice.currentSide})");
+                    var diceValue = (byte)dice.currentSide;
+                    OnDiceSettled.Invoke(diceValue);
+                    Debug.Log($"Dice settled on: {dice.currentSide} (Value: {diceValue})");
                 }
             }
             else
@@ -125,7 +129,6 @@ namespace DiceRoll.Runtime
 
         private void HandleSettledState()
         {
-            // rollState.state = DiceState.ReturningToHand;
             rb.isKinematic = false;
         }
 
