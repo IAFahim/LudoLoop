@@ -7,7 +7,6 @@ namespace DiceRoll.Runtime
     {
         public DiceState state;
         public float settledTimer;
-        public float returnTimer;
 
         public static RollState Default()
         {

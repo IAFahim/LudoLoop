@@ -5126,7 +5126,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea2cbf9da2a54b38a9476eb0fc8daae2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceSystem.Runtime.DiceRoller
+  m_EditorClassIdentifier: RollDice.Runtime::DiceRoll.Runtime.DiceRoller
   targetSeed: 0
   rollState:
     state: 1
@@ -5142,11 +5142,12 @@ MonoBehaviour:
   turnSettings:
     velocityThreshold: 0.1
     angularVelocityThreshold: 0.1
-    settledTime: 0
-    returnDelay: 2
-  handPosition: {x: 0, y: 1.8, z: -8.2}
-  handRotation: {x: 0, y: 0, z: 0, w: 1}
-  returnSpeed: 10
+    settledTime: 0.5
+    returnDelay: 30
+    returnSpeed: 10
+  handConfig:
+    handPosition: {x: 0, y: 1.8, z: -8.2}
+    handRotation: {x: 0, y: 0, z: 0, w: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

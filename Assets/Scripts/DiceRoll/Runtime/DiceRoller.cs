@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.InputSystem;
 
 namespace DiceRoll.Runtime
 {
@@ -13,22 +13,16 @@ namespace DiceRoll.Runtime
         public Dice dice = Dice.Default();
 
         [Header("Configuration")] public RandomRollConfig randomRollConfig = RandomRollConfig.Default();
-        [FormerlySerializedAs("settledThresholds")] public TurnSettings turnSettings = TurnSettings.Default();
-        public Vector3 handPosition;
-        public Quaternion handRotation = Quaternion.identity;
-
+        public TurnSettings turnSettings = TurnSettings.Default();
+        public HandConfig handConfig = HandConfig.Default();
         
-
 
         private Rigidbody rb;
         private IRandomGenerator randomGenerator;
 
         private void OnValidate()
         {
-            if (handPosition == Vector3.zero)
-            {
-                handPosition = transform.position;
-            }
+            if(!Application.isPlaying) handConfig.handPosition = transform.position;
         }
 
         private void Awake()
@@ -41,6 +35,22 @@ namespace DiceRoll.Runtime
         public void SetRandomGenerator(IRandomGenerator generator)
         {
             randomGenerator = generator;
+        }
+
+        private void Update()
+        {
+            if (Keyboard.current.anyKey.wasPressedThisFrame)
+            {
+                switch (rollState.state)
+                {
+                    case DiceState.Settled:
+                        rollState.state = DiceState.ReturningToHand;
+                        break;
+                    default:
+                        rollState.state = DiceState.Throwing;
+                        break;
+                }
+            }
         }
 
         private void FixedUpdate()
@@ -74,7 +84,7 @@ namespace DiceRoll.Runtime
 
         private void HandleInHandState()
         {
-            UnityPhysicsAdapter.SetKinematic(rb, transform, handPosition, handRotation);
+            UnityPhysicsAdapter.SetKinematic(rb, transform, handConfig.handPosition, handConfig.handRotation);
         }
 
         private void HandleThrowingState()
@@ -85,7 +95,7 @@ namespace DiceRoll.Runtime
                 randomGenerator
             );
 
-            UnityPhysicsAdapter.ApplyRollForce(rb, transform, forceData);
+            UnityPhysicsAdapter.ApplyRollForce(rb, forceData);
 
             rollState.state = DiceState.Rolling;
             rollState.settledTimer = 0f;
@@ -103,7 +113,6 @@ namespace DiceRoll.Runtime
                 {
                     dice.currentSide = DiceRollLogic.DetectTopFace(physicsData.rotation);
                     rollState.state = DiceState.Settled;
-                    rollState.returnTimer = 0f;
 
                     Debug.Log($"Dice settled on: {dice.currentSide} (Value: {(int)dice.currentSide})");
                 }
@@ -116,20 +125,15 @@ namespace DiceRoll.Runtime
 
         private void HandleSettledState()
         {
-            rollState.returnTimer += Time.fixedDeltaTime;
-
-            if (rollState.returnTimer >= turnSettings.returnDelay)
-            {
-                rollState.state = DiceState.ReturningToHand;
-                rb.isKinematic = false;
-            }
+            // rollState.state = DiceState.ReturningToHand;
+            rb.isKinematic = false;
         }
 
         private void HandleReturningState()
         {
             PhysicsData physicsData = UnityPhysicsAdapter.GetPhysicsData(rb, transform);
             
-            float distanceToHand = Vector3.Distance(physicsData.position, handPosition);
+            float distanceToHand = Vector3.Distance(physicsData.position, handConfig.handPosition);
             
             if (distanceToHand < 0.1f)
             {
@@ -137,13 +141,13 @@ namespace DiceRoll.Runtime
                 return;
             }
 
-            Vector3 direction = (handPosition - physicsData.position).normalized;
+            Vector3 direction = (handConfig.handPosition - physicsData.position).normalized;
             float step = turnSettings.returnSpeed * Time.fixedDeltaTime;
             Vector3 newPosition = physicsData.position + direction * step;
             
             rb.MovePosition(newPosition);
             
-            Quaternion targetRotation = Quaternion.Slerp(physicsData.rotation, handRotation, 5f * Time.fixedDeltaTime);
+            Quaternion targetRotation = Quaternion.Slerp(physicsData.rotation, handConfig.handRotation, 5f * Time.fixedDeltaTime);
             rb.MoveRotation(targetRotation);
         }
 
