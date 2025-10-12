@@ -1,134 +1,170 @@
 using System;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using UnityEngine.Serialization;
 
 namespace DiceRoll.Runtime
 {
-    [Serializable]
-    public struct RollConfig
-    {
-        public float rollForce;
-        public float torqueForce;
-        public float upwardForce;
-        public Vector3 direction;
-        public Quaternion rotation;
-        public Vector3 torque;
-
-        public static RollConfig Default() => new()
-        {
-            rollForce = 15f,
-            torqueForce = 2f,
-            upwardForce = 3f,
-            direction = new(0, 0, 1),
-            rotation = Quaternion.identity,
-            torque = Vector3.zero
-        };
-    }
-
-    public static class DicePhysics
-    {
-        public static void ApplyRollForce(
-            Rigidbody rb,
-            Transform transform,
-            in RollConfig config)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            transform.rotation = config.rotation;
-
-            var force = config.direction * config.rollForce + Vector3.up * config.upwardForce;
-            rb.AddForce(force, ForceMode.Impulse);
-
-            var torque = config.torque * config.torqueForce;
-            rb.AddTorque(torque, ForceMode.Impulse);
-        }
-
-        public static RollConfig RandomizeConfig(RollConfig config)
-        {
-            config.rotation = Random.rotation;
-            config.torque = new Vector3(
-                Random.Range(-1f, 1f),
-                Random.Range(-1f, 1f),
-                Random.Range(-1f, 1f)
-            ).normalized;
-            return config;
-        }
-    }
-
-    [Serializable]
-    public struct Dice
-    {
-        public DiceSides diceSides;
-
-        public static Dice Default()
-        {
-            return new Dice
-            {
-                diceSides = DiceSides.Top
-            };
-        }
-    }
-
-    public enum DiceSides : byte
-    {
-        Front = 1,
-        Right = 2,
-        Top = 3,
-        Back = 4,
-        Left = 5,
-        Bottom = 6
-    }
-
-    [Serializable]
-    public struct RollSettings
-    {
-        public bool roll;
-        public bool randomize;
-        public Vector3 spawnPosition;
-
-        public static RollSettings Default()
-        {
-            return new RollSettings()
-            {
-                roll = true,
-                randomize = true,
-                spawnPosition = Vector3.zero
-            };
-        }
-    }
-
     [RequireComponent(typeof(Rigidbody))]
     public class DiceRoller : MonoBehaviour
     {
-        public RollSettings rollSettings = RollSettings.Default();
-        public RollConfig rollConfig = RollConfig.Default();
+        public int targetSeed;
+
+        [Header("State")] public RollState rollState = RollState.Default();
+        public Dice dice = Dice.Default();
+
+        [Header("Configuration")] public RandomRollConfig randomRollConfig = RandomRollConfig.Default();
+        [FormerlySerializedAs("settledThresholds")] public TurnSettings turnSettings = TurnSettings.Default();
+        public Vector3 handPosition;
+        public Quaternion handRotation = Quaternion.identity;
+
+        
+
 
         private Rigidbody rb;
+        private IRandomGenerator randomGenerator;
+
+        private void OnValidate()
+        {
+            if (handPosition == Vector3.zero)
+            {
+                handPosition = transform.position;
+            }
+        }
 
         private void Awake()
         {
             rb = GetComponent<Rigidbody>();
-            rollSettings.spawnPosition = transform.position;
+            randomGenerator = new UnityRandomGenerator();
+        }
+
+        // Allow injection for testing
+        public void SetRandomGenerator(IRandomGenerator generator)
+        {
+            randomGenerator = generator;
         }
 
         private void FixedUpdate()
         {
-            if (!rollSettings.roll) return;
-            ResetPosition();
-            Roll();
-            rollSettings.roll = false;
+            switch (rollState.state)
+            {
+                case DiceState.InHand:
+                    HandleInHandState();
+                    break;
+
+                case DiceState.Throwing:
+                    HandleThrowingState();
+                    break;
+
+                case DiceState.Rolling:
+                    HandleRollingState();
+                    break;
+
+                case DiceState.Settled:
+                    HandleSettledState();
+                    break;
+
+                case DiceState.ReturningToHand:
+                    HandleReturningState();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
-        public void Roll()
+        private void HandleInHandState()
         {
-            ResetPosition();
-            var config = rollSettings.randomize ? DicePhysics.RandomizeConfig(rollConfig) : rollConfig;
-            DicePhysics.ApplyRollForce(rb, transform, config);
+            UnityPhysicsAdapter.SetKinematic(rb, transform, handPosition, handRotation);
         }
 
-        public void ResetPosition()
+        private void HandleThrowingState()
         {
-            transform.position = rollSettings.spawnPosition;
+            RollForceData forceData = DiceRollLogic.GenerateRollForce(
+                randomRollConfig,
+                targetSeed,
+                randomGenerator
+            );
+
+            UnityPhysicsAdapter.ApplyRollForce(rb, transform, forceData);
+
+            rollState.state = DiceState.Rolling;
+            rollState.settledTimer = 0f;
+        }
+
+        private void HandleRollingState()
+        {
+            PhysicsData physicsData = UnityPhysicsAdapter.GetPhysicsData(rb, transform);
+
+            if (DiceRollLogic.IsSettled(physicsData, turnSettings))
+            {
+                rollState.settledTimer += Time.fixedDeltaTime;
+
+                if (rollState.settledTimer >= turnSettings.settledTime)
+                {
+                    dice.currentSide = DiceRollLogic.DetectTopFace(physicsData.rotation);
+                    rollState.state = DiceState.Settled;
+                    rollState.returnTimer = 0f;
+
+                    Debug.Log($"Dice settled on: {dice.currentSide} (Value: {(int)dice.currentSide})");
+                }
+            }
+            else
+            {
+                rollState.settledTimer = 0f;
+            }
+        }
+
+        private void HandleSettledState()
+        {
+            rollState.returnTimer += Time.fixedDeltaTime;
+
+            if (rollState.returnTimer >= turnSettings.returnDelay)
+            {
+                rollState.state = DiceState.ReturningToHand;
+                rb.isKinematic = false;
+            }
+        }
+
+        private void HandleReturningState()
+        {
+            PhysicsData physicsData = UnityPhysicsAdapter.GetPhysicsData(rb, transform);
+            
+            float distanceToHand = Vector3.Distance(physicsData.position, handPosition);
+            
+            if (distanceToHand < 0.1f)
+            {
+                rollState.state = DiceState.InHand;
+                return;
+            }
+
+            Vector3 direction = (handPosition - physicsData.position).normalized;
+            float step = turnSettings.returnSpeed * Time.fixedDeltaTime;
+            Vector3 newPosition = physicsData.position + direction * step;
+            
+            rb.MovePosition(newPosition);
+            
+            Quaternion targetRotation = Quaternion.Slerp(physicsData.rotation, handRotation, 5f * Time.fixedDeltaTime);
+            rb.MoveRotation(targetRotation);
+        }
+
+        public void ThrowDiceWithSeed(int seed)
+        {
+            if (rollState.state == DiceState.InHand)
+            {
+                targetSeed = seed;
+                rollState.state = DiceState.Throwing;
+            }
+        }
+
+        public void ForceReturnToHand()
+        {
+            rollState.state = DiceState.ReturningToHand;
+            rb.isKinematic = false;
+        }
+
+        public void ThrowDiceLocal()
+        {
+            ThrowDiceWithSeed(Environment.TickCount);
         }
     }
 }

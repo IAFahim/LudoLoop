@@ -4889,7 +4889,7 @@ Transform:
   m_GameObject: {fileID: 1237735906822276270}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 4.06, z: -8.191}
+  m_LocalPosition: {x: 0, y: 1.8, z: -8.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5074,9 +5074,9 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1237735906822276270}
   serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 2.2
-  m_AngularDamping: 0
+  m_Mass: 0.5
+  m_LinearDamping: 3
+  m_AngularDamping: 1
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -5127,23 +5127,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea2cbf9da2a54b38a9476eb0fc8daae2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceSystem.Runtime.DiceRoller
-  rollConfig:
-    rollForce: 15
-    torqueForce: 2
-    upwardForce: 3
-    direction: {x: 0, y: 0, z: 1}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-    torque: {x: 0, y: 0, z: 0}
-  settleConfig:
-    velocityThreshold: 0.01
-    angularVelocityThreshold: 0.01
-    settleDelay: 0.5
-  randomize: 1
-  spawnPosition: {x: 0, y: 0, z: 0}
-  state:
-    hasSettled: 0
+  targetSeed: 0
+  rollState:
+    state: 1
+    settledTimer: 0
+    returnTimer: 0
+  dice:
     currentSide: 3
-    settleTimer: 0
+  randomRollConfig:
+    rollForceLimit: {x: 10, y: 15}
+    torqueForceLimit: {x: 1, y: 3}
+    upwardForceLimit: {x: 3, y: 5}
+    throwDirection: {x: 0, y: 0, z: 1}
+  turnSettings:
+    velocityThreshold: 0.1
+    angularVelocityThreshold: 0.1
+    settledTime: 0
+    returnDelay: 2
+  handPosition: {x: 0, y: 1.8, z: -8.2}
+  handRotation: {x: 0, y: 0, z: 0, w: 1}
+  returnSpeed: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
