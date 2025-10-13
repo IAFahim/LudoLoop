@@ -1,0 +1,17 @@
+{
+    "name": "Visulaizer.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:961869c8d3c6e4852b784cffcf5b8a5a",
+        "GUID:d17e8ad4fd0f4e088edf9a73090d1f08"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

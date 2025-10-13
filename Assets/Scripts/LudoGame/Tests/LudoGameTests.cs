@@ -80,7 +80,7 @@ public class LudoGameTests
     {
         _state.CurrentPlayer = 0;
 
-        LudoBoard.NextTurn(ref _state, MoveResult.Success);
+        LudoBoard.TryNextTurn(ref _state, MoveResult.Success);
 
         Assert.That(_state.CurrentPlayer, Is.EqualTo(1));
     }
@@ -90,7 +90,7 @@ public class LudoGameTests
     {
         _state.CurrentPlayer = 1;
 
-        LudoBoard.NextTurn(ref _state, MoveResult.SuccessSix);
+        LudoBoard.TryNextTurn(ref _state, MoveResult.SuccessSix);
 
         Assert.That(_state.CurrentPlayer, Is.EqualTo(1));
         Assert.That(_state.ConsecutiveSixes, Is.EqualTo(1));

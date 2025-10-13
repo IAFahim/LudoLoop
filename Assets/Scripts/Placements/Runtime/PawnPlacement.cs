@@ -66,7 +66,6 @@ namespace Placements.Runtime
             List<GameObject> outPawns)
         {
             outPawns.Clear();
-            if (config.count <= 0 || prefab == null) return;
 
             float angleGap = 360f / config.count;
             for (int i = 0; i < config.count; i++)
@@ -85,9 +84,19 @@ namespace Placements.Runtime
         [SerializeField] private PlacementConfig config = PlacementConfig.Default();
         [SerializeField] private List<GameObject> spawnedPawns = new();
 
-        private void OnEnable()
+        public void Place()
         {
             CircularPlacement.SpawnPawns(config, transform.position, pawnData.prefab, spawnedPawns);
+        }
+
+        public void OnPawnStart(int tokenIndex)
+        {
+            
+        }
+
+        public void OnPawnMove(int position)
+        {
+            
         }
 
         private void OnDrawGizmos()
