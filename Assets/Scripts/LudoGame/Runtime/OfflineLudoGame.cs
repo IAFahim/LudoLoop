@@ -27,13 +27,15 @@ namespace LudoGame.Runtime
         [Header("Game Events")]
         public UnityEvent<GameCreatedEventData> onGameCreated;
         public UnityEvent<TurnStartEventData> onTurnStart;
-        public UnityEvent<DiceRolledEventData> onDiceRolled;
         public UnityEvent<TokenMoveEventData> onTokenMoved;
         public UnityEvent<MoveFailedEventData> onMoveFailed;
         public UnityEvent<TurnEndEventData> onTurnEnd;
         public UnityEvent<PlayerWonEventData> onPlayerWon;
         public UnityEvent<GameStateChangedEventData> onGameStateChanged;
         #endregion
+        
+        [Header("Sync Events")]
+        public UnityEvent<BoardSyncEventData> onBoardSync;
 
         #region Private State
         private LudoGameState gameState;
@@ -93,6 +95,7 @@ namespace LudoGame.Runtime
             };
             
             onGameCreated?.Invoke(eventData);
+            EmitBoardSync("CreateNewGame");
             NotifyTurnStart();
             
             Debug.Log($"Game created with {numPlayers} players. Player {currentPlayerIndex} starts.");
@@ -127,17 +130,6 @@ namespace LudoGame.Runtime
             // Get valid moves for this dice roll
             validTokenIndices = LudoBoard.GetValidMoves(gameState, diceValue);
             
-            var diceEventData = new DiceRolledEventData
-            {
-                PlayerIndex = currentPlayerIndex,
-                DiceValue = diceValue,
-                ValidTokenCount = validTokenIndices.Length,
-                ValidTokenIndices = validTokenIndices,
-                ConsecutiveSixes = gameState.ConsecutiveSixes
-            };
-            
-            onDiceRolled?.Invoke(diceEventData);
-
             // Handle no valid moves
             if (validTokenIndices.Length == 0)
             {
@@ -338,6 +330,26 @@ namespace LudoGame.Runtime
             Array.Copy(gameState.TokenPositions, startIdx, positions, 0, 4);
             return positions;
         }
+        
+        
+        public void EmitBoardSync(string reason = "Manual")
+        {
+            if (gameState.TokenPositions == null || gameState.TokenPositions.Length == 0) return;
+
+            var snapshot = new BoardSyncEventData
+            {
+                LudoGameState = GameState,
+                Reason = reason
+            };
+            onBoardSync?.Invoke(snapshot);
+            Debug.Log($"[OfflineLudoGame] BoardSync emitted: {reason}");
+        }
+        
+        public void OnReconnect()
+        {
+            EmitBoardSync("Reconnect");
+        }
+        
         #endregion
 
         #region Public API - Serialization
@@ -371,6 +383,7 @@ namespace LudoGame.Runtime
                 };
                 
                 onGameStateChanged?.Invoke(eventData);
+                EmitBoardSync("LoadGameState");
                 NotifyTurnStart();
                 
                 Debug.Log("Game state loaded successfully.");
@@ -426,6 +439,7 @@ namespace LudoGame.Runtime
                 NotifyTurnStart();
             }
         }
+        
 
         private void NotifyTurnStart()
         {
@@ -495,16 +509,6 @@ namespace LudoGame.Runtime
         public int PlayerIndex;
         public int ConsecutiveSixes;
         public sbyte[] PlayerTokenPositions;
-    }
-
-    [Serializable]
-    public struct DiceRolledEventData
-    {
-        public int PlayerIndex;
-        public byte DiceValue;
-        public int ValidTokenCount;
-        public int[] ValidTokenIndices;
-        public int ConsecutiveSixes;
     }
 
     [Serializable]

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3772454913662998183}
   - component: {fileID: 2303272584833979541}
   m_Layer: 0
-  m_Name: Bed
+  m_Name: Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -65,7 +65,7 @@ MeshRenderer:
   m_SmallMeshCulling: 1
   m_ForceMeshLod: -1
   m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
+  m_RenderingLayerMask: 3
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: b207275d6b18b479ab1fa6a669b80ee4, type: 2}
@@ -125,11 +125,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
-  pawnComponent:
+  pawnData:
     prefab: {fileID: 7425773500103030453, guid: 4d3e461ebc5a247fd924ff36aa04daeb, type: 3}
-  radius: 0.8484
-  startAngle: 45
-  height: 2.77
-  rotation: {x: 0, y: 0, z: 0, w: 1}
-  spawnCount: 4
-  pawns: []
+  config:
+    radius: 0.8
+    startAngle: 45
+    height: 1.55
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    count: 4
+  tokens: []

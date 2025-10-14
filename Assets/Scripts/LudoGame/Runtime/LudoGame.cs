@@ -1,31 +1,53 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace LudoGame.Runtime
 {
     public struct LudoGameState
     {
-        public int PlayerCount;
+        //newly added
+        public ushort TurnCount;
+        public int DiceValue;
+        public int ConsecutiveSixes;
         public int CurrentPlayer;
         public sbyte[] TokenPositions;
-        public int ConsecutiveSixes;
+        public int PlayerCount;
+        public int Seed;
 
         /// <summary>
-        /// Serializes game state to an ultra-compact base64 string (from a 20-byte array).
-        /// Format: PlayerCount|CurrentPlayer|ConsecutiveSixes|TokenPositions
+        /// Buffer Layout (26 bytes total):
+        /// buffer[0-1] - TurnCount (ushort)
+        /// buffer[2] - DiceValue (byte)
+        /// buffer[3] - ConsecutiveSixes (byte)
+        /// buffer[4] - CurrentPlayer (byte)
+        /// buffer[5] - PlayerCount (byte)
+        /// buffer[6-9] - Seed (int)
+        /// buffer[10-25] - TokenPositions (16 bytes)
         /// </summary>
+        /// <returns></returns>
         public string Serialize()
         {
-            byte[] buffer = new byte[4 + 16];
+            // Buffer size: 10 bytes for metadata + 16 bytes for token positions = 26 bytes
+            byte[] buffer = new byte[10 + 16];
 
-            buffer[0] = (byte)PlayerCount;
-            buffer[1] = (byte)CurrentPlayer;
-            buffer[2] = (byte)ConsecutiveSixes;
-            buffer[3] = 0; // Reserved
+            // Store TurnCount as 2 bytes (ushort) at index 0-1
+            byte[] turnCountBytes = BitConverter.GetBytes(TurnCount);
+            Buffer.BlockCopy(turnCountBytes, 0, buffer, 0, 2);
 
-            Buffer.BlockCopy(TokenPositions, 0, buffer, 4, 16);
+            buffer[2] = (byte)DiceValue;
+            buffer[3] = (byte)ConsecutiveSixes;
+            buffer[4] = (byte)CurrentPlayer;
+            buffer[5] = (byte)PlayerCount;
+
+            // Store Seed as 4 bytes (int) at index 6-9
+            byte[] seedBytes = BitConverter.GetBytes(Seed);
+            Buffer.BlockCopy(seedBytes, 0, buffer, 6, 4);
+
+            // Token positions start at index 10
+            Buffer.BlockCopy(TokenPositions, 0, buffer, 10, 16);
 
             return Convert.ToBase64String(buffer);
         }
@@ -38,18 +60,32 @@ namespace LudoGame.Runtime
             byte[] buffer = Convert.FromBase64String(data);
             var state = new LudoGameState
             {
-                PlayerCount = buffer[0],
-                CurrentPlayer = buffer[1],
-                ConsecutiveSixes = buffer[2],
+                TurnCount = BitConverter.ToUInt16(buffer, 0),
+                DiceValue = buffer[2],
+                ConsecutiveSixes = buffer[3],
+                CurrentPlayer = buffer[4],
+                PlayerCount = buffer[5],
+                Seed = BitConverter.ToInt32(buffer, 6),
                 TokenPositions = new sbyte[16]
             };
 
-            Buffer.BlockCopy(buffer, 4, state.TokenPositions, 0, 16);
+            Buffer.BlockCopy(buffer, 10, state.TokenPositions, 0, 16);
 
             return state;
         }
-
         
+        public void StartNewTurn(ref LudoGameState state)
+        {
+            state.TurnCount++;
+            state.Seed = GenerateRandomSeed(); 
+            state.DiceValue = 0;
+        }
+        
+        private int GenerateRandomSeed()
+        {
+            return RandomNumberGenerator.GetInt32(int.MinValue, int.MaxValue);
+        }
+
 
         /// <summary>
         /// Creates a new game state.
@@ -136,7 +172,7 @@ namespace LudoGame.Runtime
             return sb.ToString();
         }
     }
-    
+
     public enum LudoCreateResult
     {
         Success,
@@ -361,7 +397,7 @@ namespace LudoGame.Runtime
             if (currentPos == PosBase)
             {
                 if (diceRoll != 6) return MoveResult.InvalidNeedSixToExit;
-                
+
                 // Check if start position is blocked
                 int startGlobalPos = StartOffsets[tokenColor];
                 if (IsBlockade(state, startGlobalPos, tokenColor))
@@ -401,12 +437,12 @@ namespace LudoGame.Runtime
             {
                 int tokenColor = i / TokensPerPlayer;
                 int tokenGlobalPos = GetGlobalPosition(state.TokenPositions[i], tokenColor);
-                
+
                 if (tokenGlobalPos == globalPos)
                 {
                     count++;
                     occupantColor = tokenColor;
-                    
+
                     // Early exit if we found 2+ tokens
                     if (count >= 2) break;
                 }
@@ -427,23 +463,23 @@ namespace LudoGame.Runtime
             {
                 // Get the global position for this relative position
                 int globalPos = -1;
-                
+
                 // If we're in the home stretch (>= 51), there are no blockades possible
                 if (relPos >= PosHomeStretchStart && relPos < PosFinished)
                 {
                     continue; // Home stretch can't be blocked
                 }
-                
+
                 // If we've reached the finished position, no need to check
                 if (relPos == PosFinished)
                 {
                     continue;
                 }
-                
+
                 // Get the board position and convert to global
                 sbyte boardPos = GetBoardPositionFromRelative(relPos, tokenColor);
                 globalPos = GetGlobalPosition(boardPos, tokenColor);
-                
+
                 // If this is a valid global position, check for blockades
                 if (globalPos != -1 && IsBlockade(state, globalPos, tokenColor))
                 {

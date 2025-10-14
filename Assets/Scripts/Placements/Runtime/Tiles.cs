@@ -5,34 +5,34 @@ namespace Placements.Runtime
 {
     public class Tiles : MonoBehaviour
     {
-        public GameObject[] tiles;
+        public Vector3[] tiles;
         public ColorTiles[] groupedTiles;
 
         private void OnValidate()
         {
-            var totalTiles = new List<GameObject>();
+            var totalTiles = new List<Vector3>();
 
             foreach (var tile in groupedTiles[0].FirstTiles)
             {
-                totalTiles.Add(tile);
+                totalTiles.Add(tile.transform.position);
             }
 
             foreach (var colorTiles in groupedTiles[1..4])
             {
                 foreach (var tile in colorTiles.EndTiles)
                 {
-                    totalTiles.Add(tile);
+                    totalTiles.Add(tile.transform.position);
                 }
 
                 foreach (var tile in colorTiles.FirstTiles)
                 {
-                    totalTiles.Add(tile);
+                    totalTiles.Add(tile.transform.position);
                 }
             }
 
             foreach (var tile in groupedTiles[0].EndTiles)
             {
-                totalTiles.Add(tile);
+                totalTiles.Add(tile.transform.position);
             }
 
             tiles = totalTiles.ToArray();
@@ -52,10 +52,7 @@ namespace Placements.Runtime
             Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             for (int i = 0; i < tiles.Length; i++)
             {
-                if (tiles[i] != null)
-                {
-                    UnityEditor.Handles.Label(tiles[i].transform.position, i.ToString(), style);
-                }
+                UnityEditor.Handles.Label(tiles[i], i.ToString(), style);
             }
         }
 #endif

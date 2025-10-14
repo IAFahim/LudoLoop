@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3618273686873775899}
   - component: {fileID: 1737154951251061106}
   - component: {fileID: 6294321961914760179}
+  - component: {fileID: 7334356346804415683}
   m_Layer: 0
   m_Name: Pawn
   m_TagString: Untagged
@@ -60,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 3
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c22777d6e868e4f2fb421913386b154e, type: 2}
+  - {fileID: 2100000, guid: f931b064942c641428d17a1c1c366c4b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -141,3 +142,22 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: d32ce039f36494a799f5e3624fb8f113, type: 2}
+--- !u!114 &7334356346804415683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7425773500103030453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8dca907f7d34e4fb79fb2e27deb1990, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Visualizers.Runtime.TokenColor
+  tokenIndex: 0
+  playerTeamTokenColors:
+  - {r: 0.11372549, g: 0.28235295, b: 0.64705884, a: 1}
+  - {r: 0.68235296, g: 0.09803922, b: 0.078431375, a: 1}
+  - {r: 0.101960786, g: 0.59607846, b: 0.15686275, a: 1}
+  - {r: 0.7372549, g: 0.654902, b: 0.15686275, a: 1}
+  selfRenderer: {fileID: 4692824388768862370}
