@@ -146,7 +146,6 @@ namespace LudoGame.Runtime
 
     /// <summary>
     /// Represents the result of a token move attempt.
-    /// It is now more descriptive to handle specific game events.
     /// </summary>
     public enum MoveResult
     {
@@ -162,12 +161,12 @@ namespace LudoGame.Runtime
         InvalidNeedSixToExit = 6, // Must roll 6 to exit base
         InvalidOvershoot = 7, // Would overshoot home
         InvalidNotYourToken = 8, // Token doesn't belong to current player
-        InvalidNoValidMoves = 9 // IMPROVEMENT: Dice roll is valid, but no token can legally move
+        InvalidNoValidMoves = 9, // Dice roll is valid, but no token can legally move
+        InvalidBlockedByBlockade = 10 // Path is blocked by a blockade (2+ tokens on same tile)
     }
 
     /// <summary>
-    /// IMPROVEMENT: Extension method to provide human-readable descriptions for MoveResult values.
-    /// This is ideal for UI, logging, and debugging.
+    /// Extension method to provide human-readable descriptions for MoveResult values.
     /// </summary>
     public static class MoveResultExtensions
     {
@@ -198,6 +197,8 @@ namespace LudoGame.Runtime
                     return "Invalid move: This is not your token.";
                 case MoveResult.InvalidNoValidMoves:
                     return "There are no possible moves for this roll. Your turn is skipped.";
+                case MoveResult.InvalidBlockedByBlockade:
+                    return "Invalid move: Path is blocked by a blockade.";
 
                 // Default case to catch any unhandled enum values
                 default:
@@ -206,7 +207,7 @@ namespace LudoGame.Runtime
         }
 
         /// <summary>
-        /// FIX: Determines if the MoveResult is a success state.
+        /// Determines if the MoveResult is a success state.
         /// </summary>
         public static bool IsSuccess(this MoveResult result)
         {
@@ -305,8 +306,7 @@ namespace LudoGame.Runtime
         }
 
         /// <summary>
-        /// FIX: This method is now fully accurate. It uses a comprehensive helper method (`ValidateMove`)
-        /// to ensure that every move returned is 100% legal according to all game rules.
+        /// To ensure that every move returned is 100% legal according to all game rules.
         /// This correctly handles cases where no moves are possible, allowing the turn to be skipped.
         /// </summary>
         public static int[] GetValidMoves(LudoGameState state, int diceRoll)
@@ -321,10 +321,8 @@ namespace LudoGame.Runtime
                 MoveResult result = ValidateMove(state, i, diceRoll);
 
                 // If the move is anything other than a failure, it's considered valid.
-                if (result.IsSuccess())
-                {
-                    validMoves.Add(i);
-                }
+                if (!result.IsSuccess()) continue;
+                validMoves.Add(i);
             }
 
             return validMoves.ToArray();
@@ -344,7 +342,7 @@ namespace LudoGame.Runtime
         // --- CORE LOGIC & REFACTORED METHODS ---
 
         /// <summary>
-        /// ADDED: This new helper method performs a complete, read-only validation of a potential move.
+        /// This helper method performs a complete, read-only validation of a potential move.
         /// It checks all rules (blockades, overshoots, etc.) without changing the game state.
         /// It is the single source of truth for determining if a move is legal.
         /// </summary>
@@ -363,6 +361,13 @@ namespace LudoGame.Runtime
             if (currentPos == PosBase)
             {
                 if (diceRoll != 6) return MoveResult.InvalidNeedSixToExit;
+                
+                // Check if start position is blocked
+                int startGlobalPos = StartOffsets[tokenColor];
+                if (IsBlockade(state, startGlobalPos, tokenColor))
+                {
+                    return MoveResult.InvalidBlockedByBlockade;
+                }
             }
             // 3. Handle logic for a normal move on the board.
             else
@@ -372,10 +377,81 @@ namespace LudoGame.Runtime
 
                 // Check if the move would overshoot the home position.
                 if (newRelativePos > PosFinished) return MoveResult.InvalidOvershoot;
+
+                // Check if path is blocked by blockades
+                if (IsPathBlocked(state, tokenColor, relativePos, newRelativePos))
+                {
+                    return MoveResult.InvalidBlockedByBlockade;
+                }
             }
 
             // If all checks pass, the move is valid.
             return MoveResult.Success;
+        }
+
+        /// <summary>
+        /// Checks if there's a blockade (2+ tokens of the same color) at the given global position.
+        /// </summary>
+        private static bool IsBlockade(LudoGameState state, int globalPos, int movingTokenColor)
+        {
+            int count = 0;
+            int occupantColor = -1;
+
+            for (int i = 0; i < state.PlayerCount * TokensPerPlayer; i++)
+            {
+                int tokenColor = i / TokensPerPlayer;
+                int tokenGlobalPos = GetGlobalPosition(state.TokenPositions[i], tokenColor);
+                
+                if (tokenGlobalPos == globalPos)
+                {
+                    count++;
+                    occupantColor = tokenColor;
+                    
+                    // Early exit if we found 2+ tokens
+                    if (count >= 2) break;
+                }
+            }
+
+            // A blockade exists if there are 2+ tokens of a different color on this tile
+            // (Safe tiles cannot be blockaded in traditional Ludo)
+            return count >= 2 && occupantColor != movingTokenColor && !IsSafeTile(globalPos);
+        }
+
+        /// <summary>
+        /// Checks if the path from startRelativePos to endRelativePos is blocked by any blockades.
+        /// </summary>
+        private static bool IsPathBlocked(LudoGameState state, int tokenColor, int startRelativePos, int endRelativePos)
+        {
+            // Check each position along the path (exclusive of start, inclusive of end)
+            for (int relPos = startRelativePos + 1; relPos <= endRelativePos; relPos++)
+            {
+                // Get the global position for this relative position
+                int globalPos = -1;
+                
+                // If we're in the home stretch (>= 51), there are no blockades possible
+                if (relPos >= PosHomeStretchStart && relPos < PosFinished)
+                {
+                    continue; // Home stretch can't be blocked
+                }
+                
+                // If we've reached the finished position, no need to check
+                if (relPos == PosFinished)
+                {
+                    continue;
+                }
+                
+                // Get the board position and convert to global
+                sbyte boardPos = GetBoardPositionFromRelative(relPos, tokenColor);
+                globalPos = GetGlobalPosition(boardPos, tokenColor);
+                
+                // If this is a valid global position, check for blockades
+                if (globalPos != -1 && IsBlockade(state, globalPos, tokenColor))
+                {
+                    return true; // Path is blocked
+                }
+            }
+
+            return false; // Path is clear
         }
 
         private static (int color, int count) AnalyzeTileOccupancy(LudoGameState state, int globalPos)
@@ -417,7 +493,7 @@ namespace LudoGame.Runtime
         }
 
         /// <summary>
-        /// FIX: Changed return type from bool to void for consistency. It now sets the out result and returns.
+        /// Changed return type from bool to void for consistency. It now sets the out result and returns.
         /// </summary>
         private static void TryMoveFromBase(ref LudoGameState state, int tokenIndex, int diceRoll, bool isThirdSix,
             out MoveResult result)
@@ -428,7 +504,17 @@ namespace LudoGame.Runtime
                 return;
             }
 
-            // IMPROVEMENT: Handle the third six penalty
+            int tokenColor = tokenIndex / TokensPerPlayer;
+            int startGlobalPos = StartOffsets[tokenColor];
+
+            // Check for blockade at start position
+            if (IsBlockade(state, startGlobalPos, tokenColor))
+            {
+                result = MoveResult.InvalidBlockedByBlockade;
+                return;
+            }
+
+            // Handle the third six penalty
             if (isThirdSix)
             {
                 // The token is moved out, but the turn ends immediately.
@@ -437,8 +523,6 @@ namespace LudoGame.Runtime
                 return;
             }
 
-            int tokenColor = tokenIndex / TokensPerPlayer;
-            int startGlobalPos = StartOffsets[tokenColor];
             (int occupantColor, int occupantCount) = AnalyzeTileOccupancy(state, startGlobalPos);
 
             bool evicted = false;
@@ -450,7 +534,7 @@ namespace LudoGame.Runtime
 
             state.TokenPositions[tokenIndex] = (sbyte)startGlobalPos;
 
-            // IMPROVEMENT: Set result based on whether an eviction occurred.
+            // Set result based on whether an eviction occurred.
             result = evicted ? MoveResult.SuccessEvictedOpponent : MoveResult.SuccessSix;
         }
 
@@ -467,7 +551,14 @@ namespace LudoGame.Runtime
                 return;
             }
 
-            // IMPROVEMENT: If it's the third six, the move is made, but the turn ends.
+            // Check if path is blocked
+            if (IsPathBlocked(state, tokenColor, relativePos, newRelativePos))
+            {
+                result = MoveResult.InvalidBlockedByBlockade;
+                return;
+            }
+
+            // If it's the third six, the move is made, but the turn ends.
             if (isThirdSix)
             {
                 state.TokenPositions[tokenIndex] = GetBoardPositionFromRelative(newRelativePos, tokenColor);
