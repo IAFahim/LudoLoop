@@ -27,10 +27,10 @@ namespace Placements.Runtime
             }
         }
 
-        public void CreateBase(GameCreatedEventData gameCreatedEventData)
+        public void CreateBase(LudoGameState ludoGameState)
         {
             // Ensure pawnBases array is initialized
-            var playerCount = gameCreatedEventData.PlayerCount;
+            var playerCount = ludoGameState.PlayerCount;
             pawnBases = new PawnBase[playerCount];
 
             // Instantiate PawnBase prefabs at the sorted positions
@@ -42,7 +42,7 @@ namespace Placements.Runtime
             }
         }
 
-        public void MovePawn(TurnStartEventData turnStartEventData)
+        public void MovePawn()
         {
             
         }

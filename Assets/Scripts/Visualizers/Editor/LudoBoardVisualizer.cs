@@ -9,7 +9,7 @@ namespace Visualizers.Editor
     public class LudoBoardVisualizer : MonoBehaviour
     {
         [Header("Game Logic Source")]
-        public OfflineLudoGame ludoGame;
+        public SyncLudoGame ludoGame;
 
         [Header("Physical Board Definition")]
         [Tooltip("The single 'Tiles' component that contains the final, flattened 'tiles' array.")]
