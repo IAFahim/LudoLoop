@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo Game Test Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 1.3em;
+        }
+        input, button, select {
+            padding: 10px 15px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #messages {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .message {
+            margin-bottom: 5px;
+        }
+        .message.error {
+            color: #ff6b6b;
+        }
+        .message.success {
+            color: #51cf66;
+        }
+        .game-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+            font-size: 1em;
+        }
+        .info-card p {
+            margin: 5px 0;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .player-tokens {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .player-tokens h4 {
+            margin: 0 0 10px 0;
+        }
+        .token {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 3px;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .player-0 { background: #e74c3c; }
+        .player-1 { background: #3498db; }
+        .player-2 { background: #2ecc71; }
+        .player-3 { background: #f39c12; }
+        .current-turn {
+            border: 3px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Ludo Game Test Client</h1>
+        
+        <div id="status" class="status disconnected">
+            Disconnected
+        </div>
+
+        <div class="section">
+            <h2>Connection</h2>
+            <input type="text" id="serverUrl" value="ws://localhost:8080" placeholder="Server URL" style="width: 300px;">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div class="section">
+            <h2>Game Management</h2>
+            <input type="text" id="playerName" placeholder="Your Name" value="Player 1">
+            <input type="number" id="maxPlayers" value="4" min="2" max="4" placeholder="Max Players">
+            <button onclick="createGame()">Create Game</button>
+            <br>
+            <input type="text" id="sessionId" placeholder="Session ID">
+            <button onclick="joinGame()">Join Game</button>
+            <button onclick="startGame()">Start Game</button>
+            <button onclick="listGames()">List Games</button>
+        </div>
+
+        <div class="section">
+            <h2>Game Actions</h2>
+            <button onclick="rollDice()">Roll Dice 🎲</button>
+            <input type="number" id="tokenIndex" placeholder="Token Index (0-15)" min="0" max="15">
+            <button onclick="moveToken()">Move Token</button>
+            <button onclick="getState()">Refresh State</button>
+        </div>
+
+        <div class="section">
+            <h2>Game State</h2>
+            <div class="game-info">
+                <div class="info-card">
+                    <h3>Session Info</h3>
+                    <p><strong>Session ID:</strong> <span id="infoSessionId">-</span></p>
+                    <p><strong>Player ID:</strong> <span id="infoPlayerId">-</span></p>
+                    <p><strong>Your Index:</strong> <span id="infoPlayerIndex">-</span></p>
+                </div>
+                <div class="info-card">
+                    <h3>Game Info</h3>
+                    <p><strong>Status:</strong> <span id="infoGameStatus">Not Started</span></p>
+                    <p><strong>Current Turn:</strong> <span id="infoCurrentPlayer">-</span></p>
+                    <p><strong>Last Dice:</strong> <span id="infoLastDice">-</span></p>
+                    <p><strong>Consecutive 6s:</strong> <span id="infoSixes">0</span></p>
+                </div>
+                <div class="info-card">
+                    <h3>Players</h3>
+                    <div id="infoPlayers">-</div>
+                </div>
+            </div>
+
+            <div class="board" id="board">
+                <!-- Player tokens will be displayed here -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Console</h2>
+            <button onclick="clearMessages()">Clear Console</button>
+            <div id="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentPlayerId = null;
+        let currentSessionId = null;
+        let currentPlayerIndex = null;
+        let gameState = null;
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                updateStatus(true);
+                addMessage('Connected to server', 'success');
+            };
+
+            ws.onclose = () => {
+                updateStatus(false);
+                addMessage('Disconnected from server', 'error');
+            };
+
+            ws.onerror = (error) => {
+                addMessage('WebSocket error: ' + error, 'error');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            status.textContent = connected ? 'Connected' : 'Disconnected';
+            status.className = 'status ' + (connected ? 'connected' : 'disconnected');
+        }
+
+        function send(type, payload) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('Not connected to server', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({ type, payload }));
+        }
+
+        function createGame() {
+            const playerName = document.getElementById('playerName').value || 'Player 1';
+            const maxPlayers = parseInt(document.getElementById('maxPlayers').value) || 4;
+            send('create_game', { playerName, maxPlayers });
+        }
+
+        function joinGame() {
+            const sessionId = document.getElementById('sessionId').value;
+            const playerName = document.getElementById('playerName').value || 'Player 2';
+            if (!sessionId) {
+                addMessage('Please enter a session ID', 'error');
+                return;
+            }
+            send('join_game', { sessionId, playerName });
+        }
+
+        function startGame() {
+            if (!currentPlayerId) {
+                addMessage('Not in a game', 'error');
+                return;
+            }
+            send('start_game', { playerId: currentPlayerId });
+        }
+
+        function rollDice() {
+            if (!currentPlayerId) {
+                addMessage('Not in a game', 'error');
+                return;
+            }
+            send('roll_dice', { playerId: currentPlayerId });
+        }
+
+        function moveToken() {
+            const tokenIndex = parseInt(document.getElementById('tokenIndex').value);
+            if (isNaN(tokenIndex) || tokenIndex < 0 || tokenIndex > 15) {
+                addMessage('Invalid token index', 'error');
+                return;
+            }
+            if (!currentPlayerId) {
+                addMessage('Not in a game', 'error');
+                return;
+            }
+            send('move_token', { playerId: currentPlayerId, tokenIndex });
+        }
+
+        function getState() {
+            if (!currentPlayerId) {
+                addMessage('Not in a game', 'error');
+                return;
+            }
+            send('get_state', { playerId: currentPlayerId });
+        }
+
+        function listGames() {
+            send('list_games', {});
+        }
+
+        function handleMessage(data) {
+            addMessage('◀ ' + data.type + ': ' + JSON.stringify(data.payload));
+
+            switch (data.type) {
+                case 'game_created':
+                    currentPlayerId = data.payload.playerId;
+                    currentSessionId = data.payload.sessionId;
+                    currentPlayerIndex = data.payload.playerIndex;
+                    document.getElementById('sessionId').value = currentSessionId;
+                    updateGameInfo(data.payload.gameState);
+                    addMessage('Game created! Share session ID: ' + currentSessionId, 'success');
+                    break;
+
+                case 'game_joined':
+                    currentPlayerId = data.payload.playerId;
+                    currentSessionId = data.payload.sessionId;
+                    currentPlayerIndex = data.payload.playerIndex;
+                    updateGameInfo(data.payload.gameState);
+                    addMessage('Joined game successfully!', 'success');
+                    break;
+
+                case 'game_started':
+                    addMessage('Game started! Player ' + data.payload.currentPlayer + ' goes first.', 'success');
+                    gameState = data.payload.gameState;
+                    updateBoard();
+                    break;
+
+                case 'dice_rolled':
+                    addMessage('Player ' + data.payload.playerIndex + ' rolled ' + data.payload.diceValue, 'success');
+                    if (data.payload.noValidMoves) {
+                        addMessage('No valid moves! Turn skipped.', 'error');
+                    }
+                    break;
+
+                case 'token_moved':
+                    addMessage('Token moved: ' + data.payload.message, 'success');
+                    gameState = data.payload.gameState;
+                    updateBoard();
+                    break;
+
+                case 'game_state':
+                    updateGameInfo(data.payload);
+                    break;
+
+                case 'game_over':
+                    addMessage('🎉 Player ' + data.payload.winnerIndex + ' (' + data.payload.winnerName + ') won!', 'success');
+                    break;
+
+                case 'games_list':
+                    addMessage('Available games: ' + data.payload.games.length);
+                    data.payload.games.forEach(game => {
+                        addMessage('  • ' + game.sessionId.substring(0, 8) + '... (' + game.playerCount + '/' + game.maxPlayers + ')');
+                    });
+                    break;
+
+                case 'error':
+                    addMessage('Error: ' + data.payload.error, 'error');
+                    break;
+            }
+        }
+
+        function updateGameInfo(info) {
+            if (!info) return;
+
+            document.getElementById('infoSessionId').textContent = info.sessionId?.substring(0, 8) + '...' || '-';
+            document.getElementById('infoPlayerId').textContent = currentPlayerId?.substring(0, 8) + '...' || '-';
+            document.getElementById('infoPlayerIndex').textContent = info.playerIndex ?? '-';
+            document.getElementById('infoGameStatus').textContent = info.isStarted ? 'Playing' : 'Waiting';
+            document.getElementById('infoCurrentPlayer').textContent = info.currentPlayer ?? '-';
+            document.getElementById('infoLastDice').textContent = info.currentDiceRoll || '-';
+            document.getElementById('infoSixes').textContent = info.gameState?.consecutiveSixes || 0;
+
+            if (info.players) {
+                const playersDiv = document.getElementById('infoPlayers');
+                playersDiv.innerHTML = info.players.map(p => 
+                    `<p style="margin: 2px 0;">P${p.playerIndex}: ${p.name} ${p.connected ? '🟢' : '🔴'}</p>`
+                ).join('');
+            }
+
+            if (info.gameState) {
+                gameState = info.gameState;
+                updateBoard();
+            }
+        }
+
+        function updateBoard() {
+            if (!gameState) return;
+
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            for (let player = 0; player < gameState.playerCount; player++) {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-tokens';
+                if (player === gameState.currentPlayer) {
+                    playerDiv.classList.add('current-turn');
+                }
+
+                playerDiv.innerHTML = `<h4>Player ${player}</h4>`;
+
+                for (let i = 0; i < 4; i++) {
+                    const tokenIndex = player * 4 + i;
+                    const position = gameState.tokenPositions[tokenIndex];
+                    const token = document.createElement('span');
+                    token.className = 'token player-' + player;
+                    
+                    let posText = '';
+                    if (position === -1) posText = 'B';
+                    else if (position === 57) posText = '🏠';
+                    else if (position >= 100) posText = 'H';
+                    else posText = position;
+                    
+                    token.textContent = posText;
+                    token.title = `Token ${tokenIndex}: Position ${position}`;
+                    playerDiv.appendChild(token);
+                }
+
+                boardDiv.appendChild(playerDiv);
+            }
+        }
+
+        function addMessage(text, type = '') {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message ' + type;
+            msg.textContent = new Date().toLocaleTimeString() + ' - ' + text;
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
