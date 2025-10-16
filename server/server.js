@@ -3,402 +3,477 @@ const { v4: uuidv4 } = require('uuid');
 const GameSession = require('./gameSession');
 
 const PORT = process.env.PORT || 8080;
+const GAME_CLEANUP_INTERVAL = 300000; // 5 minutes
+const INACTIVE_GAME_TIMEOUT = 1800000; // 30 minutes
 
 class LudoGameServer {
     constructor() {
         this.wss = null;
-        this.gameSessions = new Map(); // sessionId -> GameSession
-        this.playerSessions = new Map(); // playerId -> sessionId
-        this.playerConnections = new Map(); // playerId -> ws
+        this.gameSessions = new Map();      // sessionId -> GameSession
+        this.playerSessions = new Map();    // playerId -> sessionId
+        this.playerConnections = new Map(); // playerId -> ws connection
+        this.matchmakingQueues = new Map(); // queueKey -> [playerObjects]
+        this.playerInQueue = new Map();     // playerId -> queueKey
+
+        // Start periodic cleanup
+        this.startCleanupTimer();
     }
 
     start() {
         this.wss = new WebSocket.Server({ port: PORT });
-
-        this.wss.on('connection', (ws) => {
-            console.log('New client connected');
-            
-            ws.on('message', (message) => {
-                try {
-                    const data = JSON.parse(message);
-                    this.handleMessage(ws, data);
-                } catch (error) {
-                    console.error('Error parsing message:', error);
-                    this.sendError(ws, 'Invalid message format');
-                }
-            });
-
-            ws.on('close', () => {
-                this.handleDisconnect(ws);
-            });
-
-            ws.on('error', (error) => {
-                console.error('WebSocket error:', error);
-            });
-
-            // Send welcome message
-            this.send(ws, {
-                type: 'connected',
-                message: 'Connected to Ludo Game Server'
-            });
-        });
-
+        this.wss.on('connection', this.handleConnection.bind(this));
         console.log(`🎲 Ludo Game Server running on port ${PORT}`);
+        console.log(`Server ready for Unity clients`);
     }
 
-    handleMessage(ws, data) {
+    handleConnection(ws) {
+        const playerId = uuidv4();
+        ws.playerId = playerId;
+        this.playerConnections.set(playerId, ws);
+
+        console.log(`New client connected: ${playerId}`);
+
+        ws.on('message', (message) => {
+            try {
+                const data = JSON.parse(message);
+                this.handleMessage(ws, data, playerId);
+            } catch (error) {
+                console.error('Error parsing message:', error);
+                this.sendError(ws, 'Invalid message format');
+            }
+        });
+
+        ws.on('close', () => this.handleDisconnect(ws, playerId));
+        ws.on('error', (error) => console.error('WebSocket error:', error));
+
+        this.send(ws, {
+            type: 'connected',
+            payload: {
+                message: 'Connected to Ludo Game Server',
+                playerId: playerId
+            }
+        });
+    }
+
+    handleMessage(ws, data, playerId) {
         const { type, payload } = data;
+        const newPayload = { ...payload, playerId };
 
-        switch (type) {
-            case 'create_game':
-                this.handleCreateGame(ws, payload);
-                break;
-            case 'join_game':
-                this.handleJoinGame(ws, payload);
-                break;
-            case 'start_game':
-                this.handleStartGame(ws, payload);
-                break;
-            case 'roll_dice':
-                this.handleRollDice(ws, payload);
-                break;
-            case 'move_token':
-                this.handleMoveToken(ws, payload);
-                break;
-            case 'get_state':
-                this.handleGetState(ws, payload);
-                break;
-            case 'leave_game':
-                this.handleLeaveGame(ws, payload);
-                break;
-            case 'reconnect':
-                this.handleReconnect(ws, payload);
-                break;
-            case 'list_games':
-                this.handleListGames(ws);
-                break;
-            default:
-                this.sendError(ws, `Unknown message type: ${type}`);
+        try {
+            switch (type) {
+                case 'join_queue':
+                    this.handleJoinQueue(ws, newPayload);
+                    break;
+                case 'leave_queue':
+                    this.handleLeaveQueue(ws, newPayload);
+                    break;
+                case 'roll_dice':
+                    this.handleRollDice(ws, newPayload);
+                    break;
+                case 'move_token':
+                    this.handleMoveToken(ws, newPayload);
+                    break;
+                case 'get_state':
+                    this.handleGetState(ws, newPayload);
+                    break;
+                case 'leave_game':
+                    this.handleLeaveGame(ws, newPayload);
+                    break;
+                case 'reconnect':
+                    this.handleReconnect(ws, newPayload);
+                    break;
+                default:
+                    this.sendError(ws, `Unknown message type: ${type}`);
+            }
+        } catch (error) {
+            console.error(`Error handling message type ${type}:`, error);
+            this.sendError(ws, 'Internal server error');
         }
     }
 
-    handleCreateGame(ws, payload) {
-        const { maxPlayers = 4, playerName } = payload;
-        const sessionId = uuidv4();
-        const playerId = uuidv4();
+    // ==================== MATCHMAKING ====================
 
-        const session = new GameSession(sessionId, maxPlayers);
-        const result = session.addPlayer(playerId, ws, playerName);
+    handleJoinQueue(ws, payload) {
+        const { playerId, playerName, roomType, playerCount } = payload;
 
-        if (!result.success) {
-            this.sendError(ws, result.error);
-            return;
+        if (!playerName || !roomType || !playerCount) {
+            return this.sendError(ws, 'Missing required fields: playerName, roomType, playerCount');
         }
 
-        this.gameSessions.set(sessionId, session);
-        this.playerSessions.set(playerId, sessionId);
-        this.playerConnections.set(playerId, ws);
+        if (playerCount < 2 || playerCount > 4) {
+            return this.sendError(ws, 'Player count must be between 2 and 4');
+        }
 
-        this.send(ws, {
-            type: 'game_created',
+        if (this.playerSessions.has(playerId)) {
+            return this.sendError(ws, 'You are already in a game');
+        }
+
+        if (this.playerInQueue.has(playerId)) {
+            return this.sendError(ws, 'You are already in a queue');
+        }
+
+        const queueKey = `${roomType}_${playerCount}`;
+
+        if (!this.matchmakingQueues.has(queueKey)) {
+            this.matchmakingQueues.set(queueKey, []);
+        }
+
+        const queue = this.matchmakingQueues.get(queueKey);
+        queue.push({ playerId, playerName, ws, roomType });
+        this.playerInQueue.set(playerId, queueKey);
+
+        console.log(`Player ${playerName} (${playerId}) joined queue ${queueKey}. Queue: ${queue.length}/${playerCount}`);
+
+        this.broadcastToQueue(queueKey, {
+            type: 'queue_update',
             payload: {
-                sessionId,
-                playerId,
-                playerIndex: result.playerIndex,
-                maxPlayers,
-                gameState: session.getGameStateForPlayer(playerId)
+                queueKey,
+                roomType,
+                currentPlayers: queue.length,
+                neededPlayers: playerCount
             }
         });
 
-        console.log(`Game created: ${sessionId} by player ${playerId}`);
+        if (queue.length >= playerCount) {
+            const playersForGame = queue.splice(0, playerCount);
+            this.startMatchmadeGame(playersForGame, roomType, playerCount);
+        }
     }
 
-    handleJoinGame(ws, payload) {
-        const { sessionId, playerName } = payload;
-        const session = this.gameSessions.get(sessionId);
-
-        if (!session) {
-            this.sendError(ws, 'Game not found');
-            return;
-        }
-
-        const playerId = uuidv4();
-        const result = session.addPlayer(playerId, ws, playerName);
-
-        if (!result.success) {
-            this.sendError(ws, result.error);
-            return;
-        }
-
-        this.playerSessions.set(playerId, sessionId);
-        this.playerConnections.set(playerId, ws);
-
-        // Notify new player
-        this.send(ws, {
-            type: 'game_joined',
-            payload: {
-                sessionId,
-                playerId,
-                playerIndex: result.playerIndex,
-                gameState: session.getGameStateForPlayer(playerId)
-            }
-        });
-
-        // Notify all players
-        session.broadcast({
-            type: 'player_joined',
-            payload: {
-                playerId,
-                playerIndex: result.playerIndex,
-                playerName,
-                playerCount: session.players.size
-            }
-        });
-
-        console.log(`Player ${playerId} joined game ${sessionId}`);
-    }
-
-    handleStartGame(ws, payload) {
+    handleLeaveQueue(ws, payload) {
         const { playerId } = payload;
-        const sessionId = this.playerSessions.get(playerId);
-        const session = this.gameSessions.get(sessionId);
+        const queueKey = this.playerInQueue.get(playerId);
 
-        if (!session) {
-            this.sendError(ws, 'Not in a game');
-            return;
+        if (!queueKey) {
+            return this.sendError(ws, 'You are not in a queue');
         }
 
-        const result = session.startGame();
-        if (!result.success) {
-            this.sendError(ws, result.error);
-            return;
+        const queue = this.matchmakingQueues.get(queueKey);
+        if (queue) {
+            const playerIndex = queue.findIndex(p => p.playerId === playerId);
+            if (playerIndex > -1) {
+                const player = queue.splice(playerIndex, 1)[0];
+                this.playerInQueue.delete(playerId);
+
+                console.log(`Player ${playerId} left queue ${queueKey}`);
+
+                this.send(ws, { 
+                    type: 'left_queue', 
+                    payload: { success: true } 
+                });
+
+                const neededPlayers = parseInt(queueKey.split('_')[1], 10);
+                this.broadcastToQueue(queueKey, {
+                    type: 'queue_update',
+                    payload: {
+                        queueKey,
+                        currentPlayers: queue.length,
+                        neededPlayers: neededPlayers
+                    }
+                });
+            }
+        }
+    }
+
+    startMatchmadeGame(players, roomType, playerCount) {
+        const sessionId = uuidv4();
+        const session = new GameSession(sessionId, players);
+        this.gameSessions.set(sessionId, session);
+
+        console.log(`Game ${sessionId} created: ${playerCount} players, room type: ${roomType}`);
+
+        for (const player of players) {
+            this.playerSessions.set(player.playerId, sessionId);
+            this.playerInQueue.delete(player.playerId);
         }
 
-        // Notify all players
         session.broadcast({
-            type: 'game_started',
+            type: 'match_found',
             payload: {
-                playerCount: session.players.size,
-                currentPlayer: session.gameState.currentPlayer,
-                gameState: session.gameState
+                sessionId,
+                playerCount,
+                roomType,
+                gameState: session.gameState,
+                players: Array.from(session.players.entries()).map(([id, p]) => ({
+                    playerId: id,
+                    name: p.name,
+                    playerIndex: p.playerIndex
+                }))
             }
         });
-
-        console.log(`Game started: ${sessionId}`);
     }
+
+    broadcastToQueue(queueKey, message) {
+        const queue = this.matchmakingQueues.get(queueKey);
+        if (queue) {
+            queue.forEach(player => {
+                this.send(player.ws, message);
+            });
+        }
+    }
+
+    // ==================== GAME LOGIC ====================
 
     handleRollDice(ws, payload) {
-        const { playerId, diceValue } = payload;
+        const { playerId, forcedValue } = payload;
         const sessionId = this.playerSessions.get(playerId);
+        
+        if (!sessionId) {
+            return this.sendError(ws, 'You are not in a game');
+        }
+
         const session = this.gameSessions.get(sessionId);
-
         if (!session) {
-            this.sendError(ws, 'Not in a game');
-            return;
+            return this.sendError(ws, 'Game session not found');
         }
 
-        const result = session.rollDice(playerId, diceValue);
+        const result = session.rollDice(playerId, forcedValue);
+        
         if (!result.success) {
-            this.sendError(ws, result.error);
-            return;
+            return this.sendError(ws, result.error);
         }
 
-        // Notify all players
         session.broadcast({
             type: 'dice_rolled',
-            payload: {
-                playerId,
-                playerIndex: session.players.get(playerId).playerIndex,
-                diceValue: result.diceValue,
-                validMoves: result.validMoves,
-                noValidMoves: result.noValidMoves,
-                nextPlayer: result.nextPlayer
-            }
+            payload: result
         });
 
-        console.log(`Player ${playerId} rolled ${result.diceValue}`);
+        console.log(`Game ${sessionId}: Player ${result.playerIndex} rolled ${result.diceValue}`);
     }
 
     handleMoveToken(ws, payload) {
         const { playerId, tokenIndex } = payload;
         const sessionId = this.playerSessions.get(playerId);
-        const session = this.gameSessions.get(sessionId);
 
+        if (!sessionId) {
+            return this.sendError(ws, 'You are not in a game');
+        }
+
+        const session = this.gameSessions.get(sessionId);
         if (!session) {
-            this.sendError(ws, 'Not in a game');
-            return;
+            return this.sendError(ws, 'Game session not found');
         }
 
         const result = session.moveToken(playerId, tokenIndex);
+
         if (!result.success) {
-            this.sendError(ws, result.error);
-            return;
+            return this.sendError(ws, result.error);
         }
 
-        // Notify all players
         session.broadcast({
             type: 'token_moved',
-            payload: {
-                playerId,
-                playerIndex: session.players.get(playerId).playerIndex,
-                tokenIndex,
-                moveResult: result.moveResult,
-                message: result.message,
-                newPosition: result.newPosition,
-                hasWon: result.hasWon,
-                turnSwitched: result.turnSwitched,
-                nextPlayer: result.nextPlayer,
-                gameState: session.gameState
-            }
+            payload: result
         });
 
+        console.log(`Game ${sessionId}: Player ${result.playerIndex} moved token ${tokenIndex}`);
+
         if (result.hasWon) {
+            const player = session.players.get(playerId);
             session.broadcast({
                 type: 'game_over',
                 payload: {
                     winnerId: playerId,
-                    winnerIndex: session.players.get(playerId).playerIndex,
-                    winnerName: session.players.get(playerId).name
+                    winnerIndex: result.playerIndex,
+                    winnerName: player.name
                 }
             });
-            console.log(`Player ${playerId} won the game!`);
-        }
 
-        console.log(`Player ${playerId} moved token ${tokenIndex}`);
+            console.log(`Game ${sessionId}: Player ${player.name} won!`);
+
+            // Schedule game cleanup
+            setTimeout(() => {
+                this.cleanupGame(sessionId);
+            }, 30000); // Clean up after 30 seconds
+        }
     }
 
     handleGetState(ws, payload) {
         const { playerId } = payload;
         const sessionId = this.playerSessions.get(playerId);
-        const session = this.gameSessions.get(sessionId);
 
+        if (!sessionId) {
+            return this.sendError(ws, 'You are not in a game');
+        }
+
+        const session = this.gameSessions.get(sessionId);
         if (!session) {
-            this.sendError(ws, 'Not in a game');
-            return;
+            return this.sendError(ws, 'Game session not found');
+        }
+
+        const state = session.getGameState(playerId);
+
+        if (!state.success) {
+            return this.sendError(ws, state.error);
         }
 
         this.send(ws, {
             type: 'game_state',
-            payload: session.getGameStateForPlayer(playerId)
+            payload: state
         });
     }
 
     handleLeaveGame(ws, payload) {
         const { playerId } = payload;
         const sessionId = this.playerSessions.get(playerId);
-        const session = this.gameSessions.get(sessionId);
 
-        if (!session) {
-            this.sendError(ws, 'Not in a game');
-            return;
+        if (!sessionId) {
+            return this.sendError(ws, 'You are not in a game');
         }
+
+        const session = this.gameSessions.get(sessionId);
+        if (!session) {
+            return this.sendError(ws, 'Game session not found');
+        }
+
+        const player = session.players.get(playerId);
+        const playerName = player ? player.name : 'Unknown';
 
         session.removePlayer(playerId);
         this.playerSessions.delete(playerId);
-        this.playerConnections.delete(playerId);
 
-        // Notify remaining players
+        this.send(ws, {
+            type: 'left_game',
+            payload: { success: true }
+        });
+
         session.broadcast({
             type: 'player_left',
             payload: {
                 playerId,
-                playerCount: session.players.size
+                playerName
             }
         });
 
-        // Delete empty sessions
-        if (session.players.size === 0) {
-            this.gameSessions.delete(sessionId);
-            console.log(`Game ${sessionId} deleted (no players)`);
-        }
-
-        this.send(ws, {
-            type: 'left_game',
-            payload: { sessionId }
-        });
-
         console.log(`Player ${playerId} left game ${sessionId}`);
+
+        if (session.allPlayersDisconnected() || session.players.size === 0) {
+            this.cleanupGame(sessionId);
+        }
     }
 
     handleReconnect(ws, payload) {
         const { playerId } = payload;
         const sessionId = this.playerSessions.get(playerId);
+
+        if (!sessionId) {
+            return this.sendError(ws, 'No active game found for reconnection');
+        }
+
         const session = this.gameSessions.get(sessionId);
-
         if (!session) {
-            this.sendError(ws, 'Session not found');
-            return;
+            this.playerSessions.delete(playerId);
+            return this.sendError(ws, 'Game session no longer exists');
         }
 
-        if (session.reconnectPlayer(playerId, ws)) {
-            this.playerConnections.set(playerId, ws);
+        const result = session.reconnectPlayer(playerId, ws);
 
-            this.send(ws, {
-                type: 'reconnected',
-                payload: {
-                    sessionId,
-                    playerId,
-                    gameState: session.getGameStateForPlayer(playerId)
-                }
-            });
-
-            session.broadcast({
-                type: 'player_reconnected',
-                payload: { playerId }
-            }, playerId);
-
-            console.log(`Player ${playerId} reconnected to game ${sessionId}`);
-        } else {
-            this.sendError(ws, 'Failed to reconnect');
+        if (!result.success) {
+            return this.sendError(ws, result.error);
         }
-    }
 
-    handleListGames(ws) {
-        const games = [];
-        for (const [sessionId, session] of this.gameSessions) {
-            if (!session.gameState || session.players.size < session.maxPlayers) {
-                games.push({
-                    sessionId,
-                    playerCount: session.players.size,
-                    maxPlayers: session.maxPlayers,
-                    isStarted: session.gameState !== null,
-                    createdAt: session.createdAt
-                });
-            }
-        }
+        this.playerConnections.set(playerId, ws);
+        ws.playerId = playerId;
 
         this.send(ws, {
-            type: 'games_list',
-            payload: { games }
+            type: 'reconnected',
+            payload: result
         });
+
+        session.broadcast({
+            type: 'player_reconnected',
+            payload: { playerId }
+        }, playerId);
+
+        console.log(`Player ${playerId} reconnected to game ${sessionId}`);
     }
 
-    handleDisconnect(ws) {
-        // Find player by websocket
-        for (const [playerId, playerWs] of this.playerConnections) {
-            if (playerWs === ws) {
-                const sessionId = this.playerSessions.get(playerId);
-                const session = this.gameSessions.get(sessionId);
+    // ==================== CONNECTION MANAGEMENT ====================
 
-                if (session) {
-                    session.disconnectPlayer(playerId);
-                    session.broadcast({
-                        type: 'player_disconnected',
-                        payload: { playerId }
-                    }, playerId);
+    handleDisconnect(ws, playerId) {
+        console.log(`Client disconnected: ${playerId}`);
 
-                    console.log(`Player ${playerId} disconnected from game ${sessionId}`);
+        // Remove from queue if in one
+        const queueKey = this.playerInQueue.get(playerId);
+        if (queueKey) {
+            const queue = this.matchmakingQueues.get(queueKey);
+            if (queue) {
+                const index = queue.findIndex(p => p.playerId === playerId);
+                if (index > -1) {
+                    queue.splice(index, 1);
+                    this.playerInQueue.delete(playerId);
+                    
+                    const neededPlayers = parseInt(queueKey.split('_')[1], 10);
+                    this.broadcastToQueue(queueKey, {
+                        type: 'queue_update',
+                        payload: {
+                            queueKey,
+                            currentPlayers: queue.length,
+                            neededPlayers: neededPlayers
+                        }
+                    });
                 }
-
-                this.playerConnections.delete(playerId);
-                break;
             }
         }
+
+        // Handle game disconnection
+        const sessionId = this.playerSessions.get(playerId);
+        if (sessionId) {
+            const session = this.gameSessions.get(sessionId);
+            if (session) {
+                session.disconnectPlayer(playerId);
+                session.broadcast({
+                    type: 'player_disconnected',
+                    payload: { playerId }
+                }, playerId);
+
+                console.log(`Player ${playerId} disconnected from game ${sessionId}`);
+            }
+        }
+
+        this.playerConnections.delete(playerId);
     }
 
+    // ==================== CLEANUP ====================
+
+    cleanupGame(sessionId) {
+        const session = this.gameSessions.get(sessionId);
+        if (!session) return;
+
+        console.log(`Cleaning up game ${sessionId}`);
+
+        for (const [playerId] of session.players.entries()) {
+            this.playerSessions.delete(playerId);
+        }
+
+        this.gameSessions.delete(sessionId);
+    }
+
+    startCleanupTimer() {
+        setInterval(() => {
+            const now = new Date();
+            
+            for (const [sessionId, session] of this.gameSessions.entries()) {
+                const inactiveTime = now - session.lastActivityTime;
+                
+                if (session.isGameOver || session.allPlayersDisconnected()) {
+                    this.cleanupGame(sessionId);
+                } else if (inactiveTime > INACTIVE_GAME_TIMEOUT) {
+                    console.log(`Game ${sessionId} inactive for ${Math.floor(inactiveTime / 60000)} minutes, cleaning up`);
+                    this.cleanupGame(sessionId);
+                }
+            }
+        }, GAME_CLEANUP_INTERVAL);
+    }
+
+    // ==================== UTILITY ====================
+
     send(ws, message) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(message));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify(message));
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
         }
     }
 

@@ -1,165 +1,191 @@
-# Quick Start Guide
+# Ludo Game Server - Quick Start Guide
 
-## Starting the Server
+## 🎯 What's This?
 
+A complete, production-ready WebSocket server for Unity Ludo multiplayer games with automatic matchmaking, full game logic, and player reconnection.
+
+## 🚀 Getting Started
+
+### 1. Install Dependencies
 ```bash
 cd server
 npm install
+```
+
+### 2. Start Server
+```bash
 npm start
 ```
 
-The server will run on `ws://localhost:8080`
+Server runs on **ws://localhost:8080**
 
-## Testing with Browser Client
-
-1. Start the server (see above)
-2. Open `test-client.html` in your browser
-3. Click "Connect"
-4. Create or join a game
-5. Play!
-
-## Testing with Node.js Client
-
+### 3. Test It Works
 ```bash
-cd server
-node example-client.js
+node test-game.js
 ```
 
-## Game Flow Example
+You should see all tests pass ✅
 
-### Two-Player Game
+## 🎮 How It Works
 
-**Player 1:**
-```javascript
-const client1 = new LudoClient();
-await client1.connect();
-client1.createGame('Alice', 2);
-// Note the session ID from console
+### Game Flow
+```
+1. Players connect → Receive unique Player ID
+2. Join matchmaking queue → Wait for other players
+3. Match found → Game starts automatically
+4. Take turns → Roll dice, move tokens
+5. First player to get all 4 tokens home wins!
 ```
 
-**Player 2:**
-```javascript
-const client2 = new LudoClient();
-await client2.connect();
-client2.joinGame('SESSION_ID_HERE', 'Bob');
+### For Unity Developers
+
+**Step 1: Connect**
+```csharp
+WebSocket ws = new WebSocket("ws://yourserver:8080");
+ws.OnMessage += HandleMessage;
+ws.Connect();
 ```
 
-**Player 1 starts:**
-```javascript
-client1.startGame();
+**Step 2: Join Queue**
+```json
+{
+  "type": "join_queue",
+  "payload": {
+    "playerName": "Player1",
+    "roomType": "casual",
+    "playerCount": 4
+  }
+}
 ```
 
-**Playing:**
-```javascript
-// Player 1's turn
-client1.rollDice();
-// Check console for valid moves, e.g., [0, 1]
-client1.moveToken(0);
-
-// Player 2's turn
-client2.rollDice();
-client2.moveToken(4); // Player 2's first token
+**Step 3: Wait for Match**
+```json
+// Server sends when game starts:
+{
+  "type": "match_found",
+  "payload": {
+    "sessionId": "game-id",
+    "gameState": { ... },
+    "players": [ ... ]
+  }
+}
 ```
 
-## API Reference
+**Step 4: Play Game**
+```json
+// On your turn, roll dice:
+{"type": "roll_dice", "payload": {}}
 
-See `README.md` for complete API documentation.
-
-## Project Structure
-
-```
-server/
-├── server.js           # Main WebSocket server
-├── gameSession.js      # Game session management
-├── ludoGame.js         # Core Ludo game logic
-├── example-client.js   # Node.js client example
-├── test-client.html    # Browser test client
-├── package.json        # Dependencies
-└── README.md          # Full documentation
+// Then move a token:
+{"type": "move_token", "payload": {"tokenIndex": 0}}
 ```
 
-## Features
+See **API.md** for complete documentation!
 
-✅ Full Ludo game implementation
-✅ 2-4 player support
-✅ Real-time multiplayer via WebSocket
-✅ Player reconnection
-✅ Game state serialization
-✅ Complete rule enforcement (blockades, safe tiles, home stretch)
-✅ Browser and Node.js clients
+## 📁 Files
 
-## Connecting from Unity
+| File | Purpose |
+|------|---------|
+| `server.js` | Main server, matchmaking, WebSocket handling |
+| `gameSession.js` | Game logic, token movement, rules |
+| `API.md` | Complete API documentation |
+| `README.md` | Detailed information |
+| `QUICKSTART.md` | This file |
+| `test-game.js` | Automated tests |
+| `test-client.html` | Browser test client |
 
-To connect from Unity, you'll need a WebSocket client library like:
-- NativeWebSocket
-- WebSocketSharp
-- Unity's built-in WebSocket support
+## 🎲 Game Rules Summary
 
-Example Unity integration:
+- **2-4 players**, each with 4 tokens
+- Roll **6 to exit** base
+- **Safe tiles**: 0, 13, 26, 39
+- **Evict** opponents by landing on them
+- **Roll again** on: 6, eviction, or reaching home
+- **Third 6 in a row**: Turn ends automatically
+- **First to get all 4 tokens home wins!**
+
+## 🔧 Configuration
+
+Change port with environment variable:
+```bash
+PORT=3000 npm start
+```
+
+## 🐛 Common Issues
+
+**"You are already in a game"**
+→ Leave current game first with `leave_game`
+
+**"Not your turn"**
+→ Wait for `currentPlayer` to match your `playerIndex`
+
+**"Invalid move"**
+→ Only move tokens in the `validMoves` array
+
+## 📚 Next Steps
+
+1. Read **API.md** for complete WebSocket API
+2. Check **README.md** for architecture details
+3. Open **test-client.html** in browser to test manually
+4. Integrate with your Unity project
+
+## 💡 Quick Unity Example
 
 ```csharp
-using NativeWebSocket;
-using UnityEngine;
-using System;
-
-public class LudoNetworkManager : MonoBehaviour
+public class LudoGameClient : MonoBehaviour
 {
-    private WebSocket ws;
+    WebSocket ws;
+    string playerId;
     
-    async void Start()
-    {
+    void Start() {
         ws = new WebSocket("ws://localhost:8080");
-        
-        ws.OnOpen += () => {
-            Debug.Log("Connected to Ludo server");
-            CreateGame();
-        };
-        
-        ws.OnMessage += (bytes) => {
-            var message = System.Text.Encoding.UTF8.GetString(bytes);
-            HandleMessage(message);
-        };
-        
-        await ws.Connect();
+        ws.OnMessage += OnMessage;
+        ws.Connect();
     }
     
-    void CreateGame()
-    {
-        var msg = new {
-            type = "create_game",
-            payload = new {
-                playerName = "Unity Player",
-                maxPlayers = 4
-            }
-        };
+    void OnMessage(object sender, MessageEventArgs e) {
+        var msg = JsonUtility.FromJson<Message>(e.Data);
         
-        ws.SendText(JsonUtility.ToJson(msg));
+        switch(msg.type) {
+            case "connected":
+                playerId = msg.payload.playerId;
+                JoinQueue();
+                break;
+            case "match_found":
+                StartGame(msg.payload);
+                break;
+            case "dice_rolled":
+                ShowDice(msg.payload.diceValue);
+                break;
+            // ... handle other messages
+        }
     }
     
-    void HandleMessage(string message)
-    {
-        // Parse and handle server messages
-        Debug.Log("Received: " + message);
+    void JoinQueue() {
+        Send("join_queue", new {
+            playerName = "UnityPlayer",
+            roomType = "casual",
+            playerCount = 4
+        });
+    }
+    
+    public void RollDice() {
+        Send("roll_dice", new {});
+    }
+    
+    public void MoveToken(int index) {
+        Send("move_token", new { tokenIndex = index });
+    }
+    
+    void Send(string type, object payload) {
+        var msg = new { type, payload };
+        ws.Send(JsonUtility.ToJson(msg));
     }
 }
 ```
 
-## Environment Variables
+## 🎉 That's It!
 
-- `PORT`: Server port (default: 8080)
+You now have a fully functional Ludo game server. Happy coding! 🚀
 
-## Troubleshooting
-
-**Server won't start:**
-- Make sure port 8080 is not in use
-- Try: `PORT=3000 npm start`
-
-**Client can't connect:**
-- Check server is running
-- Verify WebSocket URL (ws://localhost:8080)
-- Check firewall settings
-
-**Game state issues:**
-- Use `get_state` to refresh
-- Check console for error messages
-- Verify you're sending correct player/token indices
+For detailed API documentation, see **API.md**

@@ -1,0 +1,28 @@
+@startuml
+autonumber
+title Ludo Server - Player Leaves Queue Sequence
+
+actor "PlayerClient" as Client
+participant "LudoGameServer" as Server
+participant "MatchmakingQueue" as Queue
+
+Client -> Server: leave_queue
+activate Server
+Server -> Server: Get queueKey from playerInQueue map
+Server -> Queue: Remove player from queue
+activate Queue
+Queue -->> Server: Confirmation
+deactivate Queue
+Server -> Server: Delete from playerInQueue map
+
+Server -> Client: left_queue (success)
+deactivate Server
+
+note right of Server: Notify remaining players in the queue
+
+Server -> Queue: broadcastToQueue()
+activate Server
+Server ->> OtherClientsInQueue: queue_update (player count decreased)
+deactivate Server
+
+@enduml

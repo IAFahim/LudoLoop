@@ -1,15 +1,16 @@
 # Ludo Game WebSocket Server
 
-A Node.js WebSocket server for playing the Ludo game with multiplayer support.
+A production-ready Node.js WebSocket server for Unity Ludo multiplayer game.
 
 ## Features
 
-- ✅ Multiplayer support (2-4 players)
-- ✅ Real-time game synchronization via WebSockets
-- ✅ Complete Ludo game logic (dice rolling, token movement, game rules)
-- ✅ Player reconnection support
-- ✅ Game session management
-- ✅ Full implementation of Ludo rules (blockades, safe tiles, home stretch)
+- ✅ **Automatic Matchmaking** - Queue-based system for 2-4 players
+- ✅ **Real-time Multiplayer** - WebSocket communication for instant updates
+- ✅ **Complete Ludo Logic** - Full game rules implementation (blockades, safe tiles, eviction)
+- ✅ **Player Reconnection** - Seamless reconnection after disconnect
+- ✅ **Game Management** - Automatic cleanup of finished/inactive games
+- ✅ **Error Handling** - Comprehensive validation and error messages
+- ✅ **Unity Ready** - Designed for Unity C# integration
 
 ## Installation
 
@@ -30,329 +31,204 @@ For development with auto-reload:
 npm run dev
 ```
 
-The server will start on port `8080` by default. You can change this by setting the `PORT` environment variable:
+The server runs on port `8080` by default. Change with environment variable:
 
 ```bash
 PORT=3000 npm start
 ```
 
-## WebSocket API
+## Quick Start
 
-### Message Format
+### 1. Connect to Server
 
-All messages follow this structure:
+Connect your Unity client to `ws://localhost:8080`
 
+### 2. Receive Player ID
+
+Upon connection, you'll receive:
 ```json
 {
-  "type": "message_type",
-  "payload": { /* message-specific data */ }
-}
-```
-
-### Client -> Server Messages
-
-#### 1. Create Game
-
-```json
-{
-  "type": "create_game",
+  "type": "connected",
   "payload": {
-    "maxPlayers": 4,
-    "playerName": "Player 1"
+    "playerId": "your-unique-id"
   }
 }
 ```
 
-**Response:**
+### 3. Join Matchmaking
+
 ```json
 {
-  "type": "game_created",
+  "type": "join_queue",
   "payload": {
-    "sessionId": "uuid",
-    "playerId": "uuid",
-    "playerIndex": 0,
-    "maxPlayers": 4,
-    "gameState": { /* game state */ }
+    "playerName": "YourName",
+    "roomType": "casual",
+    "playerCount": 4
   }
 }
 ```
 
-#### 2. Join Game
+### 4. Play the Game
 
-```json
-{
-  "type": "join_game",
-  "payload": {
-    "sessionId": "uuid",
-    "playerName": "Player 2"
-  }
-}
-```
+Once matched, take turns rolling dice and moving tokens!
 
-**Response:**
-```json
-{
-  "type": "game_joined",
-  "payload": {
-    "sessionId": "uuid",
-    "playerId": "uuid",
-    "playerIndex": 1,
-    "gameState": { /* game state */ }
-  }
-}
-```
+See **[API.md](API.md)** for complete API documentation.
 
-#### 3. Start Game
+## WebSocket API Overview
 
-```json
-{
-  "type": "start_game",
-  "payload": {
-    "playerId": "uuid"
-  }
-}
-```
+### Main Game Flow
 
-**Broadcast to all players:**
-```json
-{
-  "type": "game_started",
-  "payload": {
-    "playerCount": 2,
-    "currentPlayer": 0,
-    "gameState": { /* game state */ }
-  }
-}
-```
+1. **Join Queue** → Wait for players → **Match Found**
+2. **Roll Dice** → Get valid moves
+3. **Move Token** → Update game state
+4. Repeat until someone wins → **Game Over**
 
-#### 4. Roll Dice
+### Core Messages
 
-```json
-{
-  "type": "roll_dice",
-  "payload": {
-    "playerId": "uuid",
-    "diceValue": null  // Optional: for testing, otherwise random 1-6
-  }
-}
-```
-
-**Broadcast to all players:**
-```json
-{
-  "type": "dice_rolled",
-  "payload": {
-    "playerId": "uuid",
-    "playerIndex": 0,
-    "diceValue": 4,
-    "validMoves": [0, 1, 2],  // Token indices that can move
-    "noValidMoves": false,
-    "nextPlayer": 0
-  }
-}
-```
-
-#### 5. Move Token
-
-```json
-{
-  "type": "move_token",
-  "payload": {
-    "playerId": "uuid",
-    "tokenIndex": 0  // 0-15 (player 0: 0-3, player 1: 4-7, etc.)
-  }
-}
-```
-
-**Broadcast to all players:**
-```json
-{
-  "type": "token_moved",
-  "payload": {
-    "playerId": "uuid",
-    "playerIndex": 0,
-    "tokenIndex": 0,
-    "moveResult": "Success",
-    "message": "Move successful.",
-    "newPosition": 5,
-    "hasWon": false,
-    "turnSwitched": true,
-    "nextPlayer": 1,
-    "gameState": { /* updated game state */ }
-  }
-}
-```
-
-#### 6. Get Game State
-
-```json
-{
-  "type": "get_state",
-  "payload": {
-    "playerId": "uuid"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "type": "game_state",
-  "payload": {
-    "sessionId": "uuid",
-    "playerIndex": 0,
-    "playerCount": 2,
-    "currentPlayer": 0,
-    "gameState": {
-      "turnCount": 5,
-      "diceValue": 0,
-      "consecutiveSixes": 0,
-      "currentPlayer": 0,
-      "tokenPositions": [-1, -1, -1, -1, ...],  // 16 positions
-      "playerCount": 2
-    },
-    "players": [...],
-    "isStarted": true,
-    "winnerId": null
-  }
-}
-```
-
-#### 7. Leave Game
-
-```json
-{
-  "type": "leave_game",
-  "payload": {
-    "playerId": "uuid"
-  }
-}
-```
-
-#### 8. Reconnect
-
-```json
-{
-  "type": "reconnect",
-  "payload": {
-    "playerId": "uuid"
-  }
-}
-```
-
-#### 9. List Games
-
-```json
-{
-  "type": "list_games",
-  "payload": {}
-}
-```
-
-**Response:**
-```json
-{
-  "type": "games_list",
-  "payload": {
-    "games": [
-      {
-        "sessionId": "uuid",
-        "playerCount": 2,
-        "maxPlayers": 4,
-        "isStarted": false,
-        "createdAt": 1234567890
-      }
-    ]
-  }
-}
-```
-
-### Server -> Client Messages
-
-#### Error
-
-```json
-{
-  "type": "error",
-  "payload": {
-    "error": "Error message"
-  }
-}
-```
-
-#### Game Over
-
-```json
-{
-  "type": "game_over",
-  "payload": {
-    "winnerId": "uuid",
-    "winnerIndex": 0,
-    "winnerName": "Player 1"
-  }
-}
-```
+| Message Type | Direction | Purpose |
+|-------------|-----------|---------|
+| `join_queue` | Client → Server | Join matchmaking |
+| `leave_queue` | Client → Server | Leave matchmaking |
+| `roll_dice` | Client → Server | Roll dice on your turn |
+| `move_token` | Client → Server | Move a token |
+| `get_state` | Client → Server | Get current game state |
+| `leave_game` | Client → Server | Exit current game |
+| `reconnect` | Client → Server | Reconnect after disconnect |
+| `match_found` | Server → Client | Game starting |
+| `dice_rolled` | Server → Client | Dice roll result |
+| `token_moved` | Server → Client | Token moved |
+| `game_over` | Server → Client | Game finished |
+| `error` | Server → Client | Error occurred |
 
 ## Game Rules
 
 ### Token Positions
-- `-1`: Token in base (not yet entered the board)
-- `0-51`: Main path positions
-- `52-56`: Home stretch (100-105 in encoding)
-- `57`: Finished
+- `-1`: Token in base (hasn't entered board yet)
+- `0-51`: Main circular path
+- `100-123`: Home stretch (varies by player color)
+- `57`: Finished (token reached home)
 
-### Move Results
-- `Success`: Normal move
-- `SuccessSix`: Rolled a 6, roll again
-- `SuccessRollAgain`: Token reached home, roll again
-- `SuccessEvictedOpponent`: Sent opponent back to base, roll again
-- `SuccessThirdSixPenalty`: Third consecutive 6, turn ends
-- `InvalidNeedSixToExit`: Must roll 6 to leave base
-- `InvalidOvershoot`: Would overshoot home
-- `InvalidBlockedByBlockade`: Path blocked by 2+ opponent tokens
-- `InvalidTokenFinished`: Token already finished
-- `InvalidNotYourToken`: Not your turn/token
-- `InvalidNoValidMoves`: No legal moves available
+### Player Colors & Starting Positions
+- Player 0 (Red): Start at position 0
+- Player 1 (Blue): Start at position 13
+- Player 2 (Green): Start at position 26
+- Player 3 (Yellow): Start at position 39
 
-### Game Flow
-1. Create or join a game
-2. Wait for all players to join
-3. Start the game
-4. Current player rolls dice
-5. Current player selects a valid token to move
-6. Token moves, game rules are applied
-7. Turn switches or player rolls again (on 6, eviction, or reaching home)
-8. Game continues until one player gets all 4 tokens home
+### Safe Tiles
+Positions 0, 13, 26, 39 are safe - tokens can't be evicted here.
 
-## Example Client
+### Special Rules
+- **Roll 6 to Exit**: Must roll a 6 to move token from base to board
+- **Roll Again**: Get another turn when you roll 6, evict opponent, or reach home
+- **Third Six Penalty**: Rolling 6 three times in a row ends your turn
+- **Blockade**: 2+ tokens of same color block opponents (except on safe tiles)
+- **Eviction**: Landing on opponent's token sends it back to base
+- **Exact Finish**: Must roll exact number to reach home (no overshoot)
 
-See `test-client.html` for a browser-based example client implementation.
-
-## Architecture
-
-- **server.js**: Main WebSocket server and message routing
-- **gameSession.js**: Game session management (players, turns, state)
-- **ludoGame.js**: Core Ludo game logic (board, rules, moves)
+### Move Result Codes
+- `Success` (0): Normal move
+- `SuccessRollAgain` (1): Token reached home
+- `SuccessSix` (2): Rolled a 6
+- `SuccessEvictedOpponent` (3): Sent opponent home
+- `SuccessThirdSixPenalty` (4): Third 6 in a row
+- `InvalidNeedSixToExit` (6): Need 6 to exit base
+- `InvalidOvershoot` (7): Can't overshoot home
+- `InvalidBlockedByBlockade` (10): Path blocked
 
 ## Testing
 
-You can test the server using the included HTML client or any WebSocket client:
+### Browser Test Client
+Open `test-client.html` in a browser to test the server.
 
-```javascript
-const ws = new WebSocket('ws://localhost:8080');
+### Command Line Test
+```bash
+npm install -g wscat
+wscat -c ws://localhost:8080
 
-ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'create_game',
-    payload: { maxPlayers: 4, playerName: 'Test Player' }
-  }));
-};
+# Join queue:
+{"type":"join_queue","payload":{"playerName":"Test","roomType":"casual","playerCount":2}}
 
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Received:', data);
-};
+# Roll dice:
+{"type":"roll_dice","payload":{}}
+
+# Move token:
+{"type":"move_token","payload":{"tokenIndex":0}}
 ```
+
+## Architecture
+
+```
+server/
+├── server.js         - WebSocket server, matchmaking, message routing
+├── gameSession.js    - Game session management, Ludo logic, player state
+├── API.md           - Complete WebSocket API documentation
+├── README.md        - This file
+└── test-client.html - Browser-based test client
+```
+
+### Key Components
+
+**LudoGameServer** (server.js)
+- WebSocket connection handling
+- Matchmaking queue management
+- Message routing and validation
+- Game session lifecycle management
+- Automatic cleanup of inactive games
+
+**GameSession** (gameSession.js)
+- Complete Ludo game logic (ported from C#)
+- Token movement validation
+- Turn management
+- Player reconnection handling
+- Game state synchronization
+
+## Unity Integration
+
+See `API.md` for complete Unity C# integration examples including:
+- WebSocket connection setup
+- Message serialization
+- Event handling
+- Game state management
+
+## Production Deployment
+
+### Environment Variables
+```bash
+PORT=8080  # WebSocket server port
+```
+
+### Recommended Setup
+- Use **PM2** for process management
+- Deploy behind **nginx** with WebSocket proxy
+- Use **SSL/TLS** for production (wss://)
+- Configure firewall to allow WebSocket connections
+
+### PM2 Example
+```bash
+npm install -g pm2
+pm2 start server.js --name ludo-server
+pm2 save
+pm2 startup
+```
+
+## Troubleshooting
+
+**"You are already in a game"**
+- Player ID is already in an active game
+- Use `leave_game` first or `reconnect` if disconnected
+
+**"Not your turn"**
+- Wait for `dice_rolled` with your playerIndex
+- Check `gameState.currentPlayer` matches your playerIndex
+
+**"Invalid move"**
+- Only use token indices from `validMoves` array
+- Roll dice before moving
+
+**Connection Issues**
+- Verify server is running on correct port
+- Check firewall/network settings
+- Ensure WebSocket support in client
 
 ## License
 

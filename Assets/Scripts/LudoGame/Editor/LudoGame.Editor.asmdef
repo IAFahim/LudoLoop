@@ -1,0 +1,16 @@
+{
+    "name": "LudoGame.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:961869c8d3c6e4852b784cffcf5b8a5a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

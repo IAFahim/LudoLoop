@@ -1,0 +1,30 @@
+@startuml
+!theme vibrant
+
+title Ludo Server - Component Diagram
+
+actor "Unity Client" as Client
+
+package "Node.js Server" {
+    [WebSocket Server (WSS)] as WSS
+    [LudoGameServer] as GameServer
+
+    package "Game Logic" {
+        [GameSession]
+    }
+
+    package "Data Structures" {
+        database "Matchmaking Queues\n(Map)" as Queues
+        database "Active Game Sessions\n(Map)" as Sessions
+    }
+}
+
+Client <-right-> WSS : "WebSocket\nConnection"
+WSS -down-> GameServer : "Forwards Messages"
+GameServer -down-> Sessions : "Manages"
+GameServer -down-> Queues : "Manages"
+GameServer ..> GameSession : "Creates &\nInteracts with"
+
+GameSession --> Sessions : "Is stored in"
+
+@enduml

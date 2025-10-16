@@ -1,0 +1,57 @@
+@startuml
+autonumber
+title Ludo Server - Successful Matchmaking Sequence
+
+actor "PlayerClient" as Client
+participant "LudoGameServer" as Server
+participant "MatchmakingQueue" as Queue
+participant "GameSession" as Game
+
+Client -> Server: Connects via WebSocket
+activate Server
+Server -> Client: on:connected (sends playerId)
+deactivate Server
+
+Client -> Server: join_queue (playerName, roomType, playerCount)
+activate Server
+Server -> Queue: Add player to queue for "roomType_playerCount"
+activate Queue
+Server -> Server: Store player's queue status (playerInQueue Map)
+Queue -> Server:
+deactivate Queue
+
+Server -> Client: queue_update (currentPlayers, neededPlayers)
+
+group Other players join
+    ...
+    note over Client, Server: Other players send 'join_queue' messages.\nServer sends 'queue_update' after each join.
+    ...
+end
+
+Server -> Queue: Check if queue is full
+activate Queue
+Queue -->> Server: Returns true
+deactivate Queue
+
+note right of Server: Queue is full! Time to start a game.
+
+Server -> Queue: Get and remove players for the game
+activate Queue
+Queue -->> Server: Returns list of player objects
+deactivate Queue
+Server -> Server: Delete players from playerInQueue map
+
+Server -> Game: create GameSession(sessionId, playerCount)
+activate Game
+Server -> Game: addPlayer(p1), addPlayer(p2)...
+Server -> Game: startGame()
+Game -->> Server: Returns initial gameState
+
+note over Server, Client: Broadcast to all matched players
+
+Server -> Client: **match_found** (sessionId, gameState)
+deactivate Server
+
+Client -> Client: Transition to Game Scene
+
+@enduml

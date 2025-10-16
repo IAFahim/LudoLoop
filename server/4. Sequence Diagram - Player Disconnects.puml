@@ -1,0 +1,36 @@
+@startuml
+autonumber
+title Ludo Server - Player Disconnects Sequence
+
+actor "PlayerClient" as Client
+participant "LudoGameServer" as Server
+participant "MatchmakingQueue" as Queue
+participant "GameSession" as Game
+
+Client -x Server: WebSocket connection drops (on:close event)
+activate Server
+Server -> Server: handleDisconnect(playerId)
+
+alt player was in a queue
+    Server -> Queue: Remove player from queue
+    activate Queue
+    Queue -->> Server:
+    deactivate Queue
+
+    Server ->> OtherClientsInQueue: queue_update (count decreased)
+
+else player was in a game
+    Server -> Game: Get player's GameSession
+    Server -> Game: disconnectPlayer(playerId)
+    activate Game
+    Game -> Game: Mark player as disconnected
+    Game -->> Server:
+    deactivate Game
+
+    Server ->> OtherPlayersInGame: player_disconnected
+end
+
+Server -> Server: Clean up playerConnections map
+deactivate Server
+
+@enduml
