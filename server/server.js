@@ -12,11 +12,13 @@ class LudoGameServer {
         this.gameSessions = new Map();      // sessionId -> GameSession
         this.playerSessions = new Map();    // playerId -> sessionId
         this.playerConnections = new Map(); // playerId -> ws connection
-        this.matchmakingQueues = new Map(); // queueKey -> [playerObjects]
-        this.playerInQueue = new Map();     // playerId -> queueKey
+        this.matchmakingQueue = [];         // All players in queue
+        this.playerInQueue = new Map();     // playerId -> queue object
+        this.QUEUE_TIMEOUT = 10000;         // 10 seconds to match
 
-        // Start periodic cleanup
+        // Start periodic cleanup and matchmaking
         this.startCleanupTimer();
+        this.startMatchmakingTimer();
     }
 
     start() {
@@ -61,6 +63,7 @@ class LudoGameServer {
 
         try {
             switch (type) {
+                case 'find_match':
                 case 'join_queue':
                     this.handleJoinQueue(ws, newPayload);
                     break;
@@ -94,14 +97,10 @@ class LudoGameServer {
     // ==================== MATCHMAKING ====================
 
     handleJoinQueue(ws, payload) {
-        const { playerId, playerName, roomType, playerCount } = payload;
+        const { playerId, playerName } = payload;
 
-        if (!playerName || !roomType || !playerCount) {
-            return this.sendError(ws, 'Missing required fields: playerName, roomType, playerCount');
-        }
-
-        if (playerCount < 2 || playerCount > 4) {
-            return this.sendError(ws, 'Player count must be between 2 and 4');
+        if (!playerName) {
+            return this.sendError(ws, 'Missing required field: playerName');
         }
 
         if (this.playerSessions.has(playerId)) {
@@ -112,87 +111,108 @@ class LudoGameServer {
             return this.sendError(ws, 'You are already in a queue');
         }
 
-        const queueKey = `${roomType}_${playerCount}`;
+        const queueObject = {
+            playerId,
+            playerName,
+            ws,
+            joinedAt: Date.now()
+        };
 
-        if (!this.matchmakingQueues.has(queueKey)) {
-            this.matchmakingQueues.set(queueKey, []);
-        }
+        this.matchmakingQueue.push(queueObject);
+        this.playerInQueue.set(playerId, queueObject);
 
-        const queue = this.matchmakingQueues.get(queueKey);
-        queue.push({ playerId, playerName, ws, roomType });
-        this.playerInQueue.set(playerId, queueKey);
+        console.log(`Player ${playerName} (${playerId}) joined matchmaking queue. Queue size: ${this.matchmakingQueue.length}`);
 
-        console.log(`Player ${playerName} (${playerId}) joined queue ${queueKey}. Queue: ${queue.length}/${playerCount}`);
-
-        this.broadcastToQueue(queueKey, {
-            type: 'queue_update',
+        this.send(ws, {
+            type: 'queue_joined',
             payload: {
-                queueKey,
-                roomType,
-                currentPlayers: queue.length,
-                neededPlayers: playerCount
+                playersInQueue: this.matchmakingQueue.length,
+                message: 'Searching for match...'
             }
         });
 
-        if (queue.length >= playerCount) {
-            const playersForGame = queue.splice(0, playerCount);
-            this.startMatchmadeGame(playersForGame, roomType, playerCount);
-        }
+        // Try immediate matchmaking
+        this.tryMatchmaking();
     }
 
     handleLeaveQueue(ws, payload) {
         const { playerId } = payload;
-        const queueKey = this.playerInQueue.get(playerId);
+        const queueObject = this.playerInQueue.get(playerId);
 
-        if (!queueKey) {
+        if (!queueObject) {
             return this.sendError(ws, 'You are not in a queue');
         }
 
-        const queue = this.matchmakingQueues.get(queueKey);
-        if (queue) {
-            const playerIndex = queue.findIndex(p => p.playerId === playerId);
-            if (playerIndex > -1) {
-                const player = queue.splice(playerIndex, 1)[0];
-                this.playerInQueue.delete(playerId);
+        const index = this.matchmakingQueue.findIndex(p => p.playerId === playerId);
+        if (index > -1) {
+            this.matchmakingQueue.splice(index, 1);
+            this.playerInQueue.delete(playerId);
 
-                console.log(`Player ${playerId} left queue ${queueKey}`);
+            console.log(`Player ${playerId} left queue. Queue size: ${this.matchmakingQueue.length}`);
 
-                this.send(ws, { 
-                    type: 'left_queue', 
-                    payload: { success: true } 
-                });
-
-                const neededPlayers = parseInt(queueKey.split('_')[1], 10);
-                this.broadcastToQueue(queueKey, {
-                    type: 'queue_update',
-                    payload: {
-                        queueKey,
-                        currentPlayers: queue.length,
-                        neededPlayers: neededPlayers
-                    }
-                });
-            }
+            this.send(ws, { 
+                type: 'left_queue', 
+                payload: { success: true } 
+            });
         }
     }
 
-    startMatchmadeGame(players, roomType, playerCount) {
+    startMatchmakingTimer() {
+        setInterval(() => {
+            this.tryMatchmaking();
+        }, 2000); // Check every 2 seconds
+    }
+
+    tryMatchmaking() {
+        if (this.matchmakingQueue.length < 2) {
+            return; // Need at least 2 players
+        }
+
+        const now = Date.now();
+        
+        // Sort by wait time (oldest first)
+        this.matchmakingQueue.sort((a, b) => a.joinedAt - b.joinedAt);
+
+        // Find players who have been waiting for timeout
+        const waitingPlayers = this.matchmakingQueue.filter(p => (now - p.joinedAt) >= this.QUEUE_TIMEOUT);
+
+        // If we have enough players waiting, create a game with available players
+        if (waitingPlayers.length >= 2) {
+            // Determine team size based on available players
+            let playerCount = Math.min(waitingPlayers.length, 4);
+            
+            // Create game with available players
+            const playersForGame = this.matchmakingQueue.splice(0, playerCount);
+            
+            // Remove from queue tracking
+            playersForGame.forEach(p => this.playerInQueue.delete(p.playerId));
+            
+            this.startMatchmadeGame(playersForGame);
+        }
+        // If we have 4 or more players total, instant match
+        else if (this.matchmakingQueue.length >= 4) {
+            const playersForGame = this.matchmakingQueue.splice(0, 4);
+            playersForGame.forEach(p => this.playerInQueue.delete(p.playerId));
+            this.startMatchmadeGame(playersForGame);
+        }
+    }
+
+    startMatchmadeGame(players) {
         const sessionId = uuidv4();
         const session = new GameSession(sessionId, players);
         this.gameSessions.set(sessionId, session);
 
-        console.log(`Game ${sessionId} created: ${playerCount} players, room type: ${roomType}`);
+        console.log(`Game ${sessionId} created: ${players.length} players (auto-matched)`);
 
         for (const player of players) {
             this.playerSessions.set(player.playerId, sessionId);
-            this.playerInQueue.delete(player.playerId);
         }
 
         session.broadcast({
             type: 'match_found',
             payload: {
                 sessionId,
-                playerCount,
-                roomType,
+                playerCount: players.length,
                 gameState: session.gameState,
                 players: Array.from(session.players.entries()).map(([id, p]) => ({
                     playerId: id,
@@ -203,13 +223,10 @@ class LudoGameServer {
         });
     }
 
-    broadcastToQueue(queueKey, message) {
-        const queue = this.matchmakingQueues.get(queueKey);
-        if (queue) {
-            queue.forEach(player => {
-                this.send(player.ws, message);
-            });
-        }
+    broadcastToQueue(message) {
+        this.matchmakingQueue.forEach(player => {
+            this.send(player.ws, message);
+        });
     }
 
     // ==================== GAME LOGIC ====================
@@ -393,25 +410,13 @@ class LudoGameServer {
         console.log(`Client disconnected: ${playerId}`);
 
         // Remove from queue if in one
-        const queueKey = this.playerInQueue.get(playerId);
-        if (queueKey) {
-            const queue = this.matchmakingQueues.get(queueKey);
-            if (queue) {
-                const index = queue.findIndex(p => p.playerId === playerId);
-                if (index > -1) {
-                    queue.splice(index, 1);
-                    this.playerInQueue.delete(playerId);
-                    
-                    const neededPlayers = parseInt(queueKey.split('_')[1], 10);
-                    this.broadcastToQueue(queueKey, {
-                        type: 'queue_update',
-                        payload: {
-                            queueKey,
-                            currentPlayers: queue.length,
-                            neededPlayers: neededPlayers
-                        }
-                    });
-                }
+        const queueObject = this.playerInQueue.get(playerId);
+        if (queueObject) {
+            const index = this.matchmakingQueue.findIndex(p => p.playerId === playerId);
+            if (index > -1) {
+                this.matchmakingQueue.splice(index, 1);
+                this.playerInQueue.delete(playerId);
+                console.log(`Player ${playerId} removed from queue. Queue size: ${this.matchmakingQueue.length}`);
             }
         }
 

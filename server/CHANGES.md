@@ -135,8 +135,6 @@ server/
 ├── README.md          ✅ Updated with accurate info
 ├── QUICKSTART.md      ✅ Updated quick start guide
 ├── test-game.js       ✅ NEW - Automated tests
-├── test-client.html   ✅ Browser test client (existing)
-└── example-client.js  ✅ Node.js example (existing)
 ```
 
 ## What Was Removed

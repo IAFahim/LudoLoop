@@ -165,15 +165,11 @@
         </div>
 
         <div class="section">
-            <h2>Game Management</h2>
+            <h2>Matchmaking</h2>
             <input type="text" id="playerName" placeholder="Your Name" value="Player 1">
-            <input type="number" id="maxPlayers" value="4" min="2" max="4" placeholder="Max Players">
-            <button onclick="createGame()">Create Game</button>
-            <br>
-            <input type="text" id="sessionId" placeholder="Session ID">
-            <button onclick="joinGame()">Join Game</button>
-            <button onclick="startGame()">Start Game</button>
-            <button onclick="listGames()">List Games</button>
+            <button onclick="findMatch()">Find Match 🎮</button>
+            <button onclick="leaveQueue()">Leave Queue</button>
+            <p id="queueStatus" style="margin: 10px 0; font-weight: bold; color: #667eea;"></p>
         </div>
 
         <div class="section">
@@ -269,28 +265,15 @@
             ws.send(JSON.stringify({ type, payload }));
         }
 
-        function createGame() {
+        function findMatch() {
             const playerName = document.getElementById('playerName').value || 'Player 1';
-            const maxPlayers = parseInt(document.getElementById('maxPlayers').value) || 4;
-            send('create_game', { playerName, maxPlayers });
+            send('find_match', { playerName });
+            document.getElementById('queueStatus').textContent = 'Searching for match...';
         }
 
-        function joinGame() {
-            const sessionId = document.getElementById('sessionId').value;
-            const playerName = document.getElementById('playerName').value || 'Player 2';
-            if (!sessionId) {
-                addMessage('Please enter a session ID', 'error');
-                return;
-            }
-            send('join_game', { sessionId, playerName });
-        }
-
-        function startGame() {
-            if (!currentPlayerId) {
-                addMessage('Not in a game', 'error');
-                return;
-            }
-            send('start_game', { playerId: currentPlayerId });
+        function leaveQueue() {
+            send('leave_queue', {});
+            document.getElementById('queueStatus').textContent = '';
         }
 
         function rollDice() {
@@ -322,34 +305,45 @@
             send('get_state', { playerId: currentPlayerId });
         }
 
-        function listGames() {
-            send('list_games', {});
-        }
-
         function handleMessage(data) {
             addMessage('◀ ' + data.type + ': ' + JSON.stringify(data.payload));
 
             switch (data.type) {
-                case 'game_created':
+                case 'connected':
                     currentPlayerId = data.payload.playerId;
-                    currentSessionId = data.payload.sessionId;
-                    currentPlayerIndex = data.payload.playerIndex;
-                    document.getElementById('sessionId').value = currentSessionId;
-                    updateGameInfo(data.payload.gameState);
-                    addMessage('Game created! Share session ID: ' + currentSessionId, 'success');
+                    addMessage('Connected! Player ID: ' + currentPlayerId.substring(0, 8) + '...', 'success');
                     break;
 
-                case 'game_joined':
-                    currentPlayerId = data.payload.playerId;
-                    currentSessionId = data.payload.sessionId;
-                    currentPlayerIndex = data.payload.playerIndex;
-                    updateGameInfo(data.payload.gameState);
-                    addMessage('Joined game successfully!', 'success');
+                case 'queue_joined':
+                    addMessage('Joined matchmaking queue. Players in queue: ' + data.payload.playersInQueue, 'success');
+                    document.getElementById('queueStatus').textContent = 'Searching... (' + data.payload.playersInQueue + ' in queue)';
                     break;
 
-                case 'game_started':
-                    addMessage('Game started! Player ' + data.payload.currentPlayer + ' goes first.', 'success');
+                case 'left_queue':
+                    addMessage('Left matchmaking queue', 'success');
+                    document.getElementById('queueStatus').textContent = '';
+                    break;
+
+                case 'match_found':
+                    currentSessionId = data.payload.sessionId;
                     gameState = data.payload.gameState;
+                    addMessage('Match found! ' + data.payload.playerCount + ' players. Game starting...', 'success');
+                    document.getElementById('queueStatus').textContent = 'Match found!';
+                    
+                    // Find our player index
+                    const ourPlayer = data.payload.players.find(p => p.playerId === currentPlayerId);
+                    if (ourPlayer) {
+                        currentPlayerIndex = ourPlayer.playerIndex;
+                    }
+                    
+                    updateGameInfo({
+                        sessionId: currentSessionId,
+                        playerIndex: currentPlayerIndex,
+                        gameState: gameState,
+                        players: data.payload.players,
+                        isStarted: true,
+                        currentPlayer: gameState.currentPlayer
+                    });
                     updateBoard();
                     break;
 
@@ -361,7 +355,7 @@
                     break;
 
                 case 'token_moved':
-                    addMessage('Token moved: ' + data.payload.message, 'success');
+                    addMessage('Token moved: ' + data.payload.moveResult, 'success');
                     gameState = data.payload.gameState;
                     updateBoard();
                     break;
@@ -374,11 +368,12 @@
                     addMessage('🎉 Player ' + data.payload.winnerIndex + ' (' + data.payload.winnerName + ') won!', 'success');
                     break;
 
-                case 'games_list':
-                    addMessage('Available games: ' + data.payload.games.length);
-                    data.payload.games.forEach(game => {
-                        addMessage('  • ' + game.sessionId.substring(0, 8) + '... (' + game.playerCount + '/' + game.maxPlayers + ')');
-                    });
+                case 'player_disconnected':
+                    addMessage('Player disconnected: ' + data.payload.playerId, 'error');
+                    break;
+
+                case 'player_reconnected':
+                    addMessage('Player reconnected: ' + data.payload.playerId, 'success');
                     break;
 
                 case 'error':

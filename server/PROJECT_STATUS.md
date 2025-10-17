@@ -79,10 +79,7 @@ server/
 ├── README.md              - Project overview
 ├── QUICKSTART.md          - Getting started guide
 ├── CHANGES.md             - What was fixed
-├── PROJECT_STATUS.md      - This file
-├── test-game.js           - Automated tests
-├── test-client.html       - Browser test client
-└── example-client.js      - Node.js example
+└── PROJECT_STATUS.md      - This file
 ```
 
 ---
