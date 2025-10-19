@@ -20,20 +20,22 @@ Server -> Server: Store player's queue status (playerInQueue Map)
 Queue -> Server:
 deactivate Queue
 
-Server -> Client: queue_update (currentPlayers, neededPlayers)
+Server -> Client: queue_joined (playersInQueue)
 
 group Other players join
     ...
-    note over Client, Server: Other players send 'join_queue' messages.\nServer sends 'queue_update' after each join.
+    note over Client, Server: Other players send 'join_queue' messages.\nServer sends 'queue_joined' to each new player.
     ...
 end
 
-Server -> Queue: Check if queue is full
+note right of Server: After 10 seconds timeout (or 4+ players),\nautomatic matchmaking starts
+
+Server -> Queue: Check if enough players (2+ after timeout OR 4+ instant)
 activate Queue
-Queue -->> Server: Returns true
+Queue -->> Server: Returns players for match
 deactivate Queue
 
-note right of Server: Queue is full! Time to start a game.
+note right of Server: Auto-match triggered! Creating game session.
 
 Server -> Queue: Get and remove players for the game
 activate Queue

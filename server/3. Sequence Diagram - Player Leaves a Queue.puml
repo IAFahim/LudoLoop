@@ -18,11 +18,6 @@ Server -> Server: Delete from playerInQueue map
 Server -> Client: left_queue (success)
 deactivate Server
 
-note right of Server: Notify remaining players in the queue
-
-Server -> Queue: broadcastToQueue()
-activate Server
-Server ->> OtherClientsInQueue: queue_update (player count decreased)
-deactivate Server
+note right of Server: No queue update broadcast to other players\n(server only broadcasts on match_found)
 
 @enduml

@@ -3,7 +3,8 @@
     "rootNamespace": "Network.Runtime",
     "references": [
         "LudoGame.Runtime",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "endel.nativewebsocket"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

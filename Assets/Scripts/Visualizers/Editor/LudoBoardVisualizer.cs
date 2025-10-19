@@ -88,7 +88,6 @@ namespace Visualizers.Editor
         }
 
         /// <summary>
-        /// **THE CORRECTED MAPPING LOGIC**
         /// This now correctly uses the pre-built arrays from your Tiles/ColorTiles components.
         /// </summary>
         private Vector3 GetTileBoardPosition(sbyte boardPos, int playerIndex)
