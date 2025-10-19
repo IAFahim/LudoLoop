@@ -8,9 +8,8 @@ namespace Visualizers.Editor
 {
     public class LudoBoardVisualizer : MonoBehaviour
     {
-        [Header("Game Logic Source")]
-        public SyncLudoGame ludoGame;
 
+        public LudoGameScript ludoGameScript;
         [Header("Physical Board Definition")]
         [Tooltip("The single 'Tiles' component that contains the final, flattened 'tiles' array.")]
         public Tiles boardLayout;
@@ -28,10 +27,10 @@ namespace Visualizers.Editor
         private void OnDrawGizmos()
         {
             // --- 1. Safety Checks ---
-            if (ludoGame == null || boardLayout == null || ludoGame.GameState.TokenPositions == null) return;
+            if (ludoGameScript == null || boardLayout == null || ludoGameScript.GameState.TokenPositions == null) return;
 
             // --- 2. Initialization ---
-            var gameState = ludoGame.GameState;
+            var gameState = ludoGameScript.GameState;
             var playerColors = new[] { Color.red, Color.blue, Color.green, Color.yellow };
             var tokensOnTile = new Dictionary<Vector3, int>();
 

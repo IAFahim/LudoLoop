@@ -6,6 +6,7 @@ using System.Text;
 
 namespace LudoGame.Runtime
 {
+    [Serializable]
     public struct LudoGameState
     {
         //newly added
