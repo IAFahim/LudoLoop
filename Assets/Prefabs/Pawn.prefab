@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1737154951251061106}
   - component: {fileID: 6294321961914760179}
   - component: {fileID: 7334356346804415683}
+  - component: {fileID: 120694755699288973}
   m_Layer: 0
   m_Name: Pawn
   m_TagString: Untagged
@@ -163,3 +164,15 @@ MonoBehaviour:
   - {r: 0.7372549, g: 0.654902, b: 0.15686275, a: 1}
   normalMaterial: {fileID: 2100000, guid: 459f64f43f4b8484d9b9eb9773824a3c, type: 2}
   blinkMaterial: {fileID: -876546973899608171, guid: dab88dffe79624dff8e19c9b4dcf311e, type: 3}
+--- !u!114 &120694755699288973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7425773500103030453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92dfa9d544846b1935767dfb61b9b16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::TokenController

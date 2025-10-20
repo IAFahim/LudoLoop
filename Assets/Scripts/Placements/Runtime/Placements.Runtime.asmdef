@@ -2,7 +2,9 @@
     "name": "Placements.Runtime",
     "rootNamespace": "",
     "references": [
-        "GUID:961869c8d3c6e4852b784cffcf5b8a5a"
+        "GUID:961869c8d3c6e4852b784cffcf5b8a5a",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

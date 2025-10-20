@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 7102015523871075867}
   - component: {fileID: 6905608050324215693}
   - component: {fileID: 2303272584833979541}
+  - component: {fileID: 2059413286515549141}
+  - component: {fileID: 2472203864393958762}
   m_Layer: 0
   m_Name: Base
   m_TagString: Untagged
@@ -112,3 +114,36 @@ MonoBehaviour:
     rotation: {x: 0, y: 0, z: 0, w: 1}
     count: 4
   tokens: []
+--- !u!65 &2059413286515549141
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 270154531169724057}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2472203864393958762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 270154531169724057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92dfa9d544846b1935767dfb61b9b16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::TokenController
