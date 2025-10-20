@@ -9,7 +9,7 @@ namespace Visualizers.Editor
     public class LudoBoardVisualizer : MonoBehaviour
     {
 
-        public LudoGameScript ludoGameScript;
+        public LudoGamePlacement ludoGamePlacement;
         [Header("Physical Board Definition")]
         [Tooltip("The single 'Tiles' component that contains the final, flattened 'tiles' array.")]
         public Tiles boardLayout;
@@ -27,10 +27,10 @@ namespace Visualizers.Editor
         private void OnDrawGizmos()
         {
             // --- 1. Safety Checks ---
-            if (ludoGameScript == null || boardLayout == null || ludoGameScript.GameState.TokenPositions == null) return;
+            if (ludoGamePlacement == null || boardLayout == null || ludoGamePlacement.gameState.TokenPositions == null) return;
 
             // --- 2. Initialization ---
-            var gameState = ludoGameScript.GameState;
+            var gameState = ludoGamePlacement.gameState;
             var playerColors = new[] { Color.red, Color.blue, Color.green, Color.yellow };
             var tokensOnTile = new Dictionary<Vector3, int>();
 
@@ -64,7 +64,7 @@ namespace Visualizers.Editor
                 }
                 else // Token is on a board tile
                 {
-                    var targetTile = GetTileBoardPosition(boardPos, playerIndex);
+                    var targetTile = boardLayout.GetTileBoardPosition(boardPos, playerIndex);
                     if (targetTile != Vector3.zero)
                     {
                         tokensOnTile.TryGetValue(targetTile, out int count);
@@ -86,34 +86,6 @@ namespace Visualizers.Editor
                 }
             }
         }
-
-        /// <summary>
-        /// This now correctly uses the pre-built arrays from your Tiles/ColorTiles components.
-        /// </summary>
-        private Vector3 GetTileBoardPosition(sbyte boardPos, int playerIndex)
-        {
-            // Case 1: Token is on the HOME STRETCH (encoded as 100+)
-            if (boardPos >= 100)
-            {
-                int homeStretchStep = (boardPos - 100) % 6;
-                if (playerIndex < boardLayout.groupedTiles.Length)
-                {
-                    var finalTiles = boardLayout.groupedTiles[playerIndex].tileFinal;
-                    if (homeStretchStep < finalTiles.Length)
-                    {
-                        return finalTiles[homeStretchStep].transform.position;
-                    }
-                }
-            }
-            // Case 2: Token is on the MAIN PATH (0-51)
-            else if (boardPos >= 0 && boardPos < boardLayout.tiles.Length)
-            {
-                // The magic is here: We directly use the flattened 'tiles' array.
-                // The logical boardPos is the same as the array index. No calculation needed!
-                return boardLayout.tiles[boardPos];
-            }
         
-            return Vector3.zero;
-        }
     }
 }

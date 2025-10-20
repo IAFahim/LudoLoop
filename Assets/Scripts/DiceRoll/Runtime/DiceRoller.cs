@@ -9,6 +9,7 @@ namespace DiceRoll.Runtime
     public class DiceRoller : MonoBehaviour
     {
         public int targetSeed;
+        public Transform dropDirectionTarget;
 
         [Header("State")] public RollState rollState = RollState.Default();
         public Dice dice = Dice.Default();
@@ -19,7 +20,6 @@ namespace DiceRoll.Runtime
 
         public UnityEvent<byte> OnDiceSettled;
 
-        public Transform dropDirectionTarget;
 
 
         private Rigidbody rb;

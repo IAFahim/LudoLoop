@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -10,12 +11,12 @@ public class LudoTestScript : MonoBehaviour
     private bool hasRolled = false;
     private int[] validMoves;
 
-    void Start()
+    void OnEnable()
     {
         client = GetComponent<LudoClient>();
         
         // Subscribe to events
-        client.OnConnected += (id) => Debug.Log($"✓ Connected! ID: {id}");
+        client.OnConnected += OnConnected;
         client.OnQueueJoined += (count) => Debug.Log($"⏳ In queue. Players: {count}");
         client.OnMatchFound += (match) => Debug.Log($"🎮 Match found! You are Player {match.myPlayerIndex}");
         client.OnDiceRolled += OnDiceRolled;
@@ -26,11 +27,17 @@ public class LudoTestScript : MonoBehaviour
         };
         client.OnGameOver += (data) => Debug.Log($"🏆 Game Over! Winner: {data.winnerName}");
         client.OnError += (err) => Debug.LogError($"❌ Error: {err}");
-        
         // Auto-connect
         Debug.Log("🔌 Connecting to server...");
         client.Connect();
     }
+
+    private void OnConnected(string id)
+    {
+        Debug.Log($"✓ Connected! ID: {id}");
+        client.FindMatch();
+    }
+
 
     void OnDiceRolled(DiceRollData data)
     {
@@ -54,6 +61,12 @@ public class LudoTestScript : MonoBehaviour
         {
             Debug.Log($"Player {data.playerIndex} rolled {data.diceValue}");
         }
+    }
+
+    [ContextMenu("RollDice")]
+    public void RollDice()
+    {
+        client.RollDice();
     }
 
     // void Update()

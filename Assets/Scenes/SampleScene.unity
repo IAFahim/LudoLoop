@@ -6754,7 +6754,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 161b033037fc4c9aaad94202a55d6cd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Visulaizer.Editor::LudoBoardVisualizer
-  ludoGameScript: {fileID: 11400000, guid: a0a10a075c568138f8506a4273bc07fb, type: 2}
+  ludoGamePlacement: {fileID: 0}
   boardLayout: {fileID: 1743346533}
   playerBases:
   - {fileID: 1188565623}
@@ -11358,6 +11358,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: RollDice.Runtime::DiceRoll.Runtime.DiceRoller
   targetSeed: 1
+  dropDirectionTarget: {fileID: 847922502}
   rollState:
     state: 1
     settledTimer: 0
@@ -11378,20 +11379,7 @@ MonoBehaviour:
     handRotation: {x: 0, y: 0, z: 0, w: 1}
   OnDiceSettled:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: LudoGame.Runtime.OfflineLudoGame, LudoGame.Runtime
-        m_MethodName: ProcessDiceRoll
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  dropDirectionTarget: {fileID: 847922502}
+      m_Calls: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

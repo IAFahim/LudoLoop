@@ -117,11 +117,21 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var requestPayload = new JoinQueueRequest
+        {
+            playerName = this.playerName,
+            roomType = roomType,
+            playerCount = playerCount
+        };
+
+        var message = new ClientMessage<JoinQueueRequest>
         {
             type = "join_queue",
-            payload = new { playerName = playerName, roomType = roomType, playerCount = playerCount }
-        });
+            payload = requestPayload
+        };
+
+        SendMessage(message);
 
         isInQueue = true;
         Debug.Log($"Finding match... ({roomType}, {playerCount} players)");
@@ -138,12 +148,14 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var message = new ClientMessage<EmptyPayload>
         {
             type = "leave_queue",
-            payload = new { }
-        });
+            payload = new EmptyPayload()
+        };
 
+        SendMessage(message);
         isInQueue = false;
     }
 
@@ -159,11 +171,19 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var requestPayload = new RollDiceRequest
+        {
+            forcedValue = forcedValue
+        };
+
+        var message = new ClientMessage<RollDiceRequest>
         {
             type = "roll_dice",
-            payload = new { forcedValue = forcedValue }
-        });
+            payload = requestPayload
+        };
+
+        SendMessage(message);
     }
 
     /// <summary>
@@ -178,11 +198,19 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var requestPayload = new MoveTokenRequest
+        {
+            tokenIndex = tokenIndex
+        };
+
+        var message = new ClientMessage<MoveTokenRequest>
         {
             type = "move_token",
-            payload = new { tokenIndex = tokenIndex }
-        });
+            payload = requestPayload
+        };
+
+        SendMessage(message);
     }
 
     /// <summary>
@@ -196,11 +224,14 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var message = new ClientMessage<EmptyPayload>
         {
             type = "get_state",
-            payload = new { }
-        });
+            payload = new EmptyPayload()
+        };
+
+        SendMessage(message);
     }
 
     /// <summary>
@@ -214,12 +245,14 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
-        SendMessage(new
+        // CHANGED: Using strongly-typed request classes
+        var message = new ClientMessage<EmptyPayload>
         {
             type = "leave_game",
-            payload = new { }
-        });
+            payload = new EmptyPayload()
+        };
 
+        SendMessage(message);
         isInGame = false;
     }
 
@@ -240,65 +273,24 @@ public class LudoClient : MonoBehaviour
     {
         try
         {
-            // First, extract just the message type
             var wrapper = JsonUtility.FromJson<MessageWrapper>(json);
-            
-            // Extract the payload JSON string manually
             string payloadJson = ExtractPayload(json);
             
             switch (wrapper.type)
             {
-                case "connected":
-                    HandleConnected(payloadJson);
-                    break;
-
-                case "queue_joined":
-                    HandleQueueJoined(payloadJson);
-                    break;
-
-                case "left_queue":
-                    HandleLeftQueue(payloadJson);
-                    break;
-
-                case "player_left":
-                    HandlePlayerLeft(payloadJson);
-                    break;
-
-                case "match_found":
-                    HandleMatchFound(payloadJson);
-                    break;
-
-                case "dice_rolled":
-                    HandleDiceRolled(payloadJson);
-                    break;
-
-                case "token_moved":
-                    HandleTokenMoved(payloadJson);
-                    break;
-
-                case "game_state":
-                    HandleGameState(payloadJson);
-                    break;
-
-                case "game_over":
-                    HandleGameOver(payloadJson);
-                    break;
-
-                case "player_disconnected":
-                    HandlePlayerDisconnected(payloadJson);
-                    break;
-
-                case "player_reconnected":
-                    HandlePlayerReconnected(payloadJson);
-                    break;
-
-                case "error":
-                    HandleError(payloadJson);
-                    break;
-
-                default:
-                    Debug.LogWarning("Unknown message type: " + wrapper.type);
-                    break;
+                case "connected": HandleConnected(payloadJson); break;
+                case "queue_joined": HandleQueueJoined(payloadJson); break;
+                case "left_queue": HandleLeftQueue(payloadJson); break;
+                case "player_left": HandlePlayerLeft(payloadJson); break;
+                case "match_found": HandleMatchFound(payloadJson); break;
+                case "dice_rolled": HandleDiceRolled(payloadJson); break;
+                case "token_moved": HandleTokenMoved(payloadJson); break;
+                case "game_state": HandleGameState(payloadJson); break;
+                case "game_over": HandleGameOver(payloadJson); break;
+                case "player_disconnected": HandlePlayerDisconnected(payloadJson); break;
+                case "player_reconnected": HandlePlayerReconnected(payloadJson); break;
+                case "error": HandleError(payloadJson); break;
+                default: Debug.LogWarning("Unknown message type: " + wrapper.type); break;
             }
         }
         catch (Exception e)
@@ -309,64 +301,26 @@ public class LudoClient : MonoBehaviour
 
     private string ExtractPayload(string json)
     {
-        // Simple payload extraction - finds "payload":{...} or "payload":[...]
         int payloadIndex = json.IndexOf("\"payload\":");
         if (payloadIndex == -1) return "{}";
-        
-        int startIndex = payloadIndex + 10; // Length of "payload":
-        
-        // Skip whitespace
-        while (startIndex < json.Length && char.IsWhiteSpace(json[startIndex]))
-            startIndex++;
-        
-        if (startIndex >= json.Length) return "{}";
+        int startIndex = json.IndexOf('{', payloadIndex);
+        if (startIndex == -1) startIndex = json.IndexOf('[', payloadIndex);
+        if (startIndex == -1) return "{}";
         
         char startChar = json[startIndex];
-        if (startChar == '{')
-        {
-            // Extract JSON object
-            int braceCount = 0;
-            int endIndex = startIndex;
-            
-            for (int i = startIndex; i < json.Length; i++)
-            {
-                if (json[i] == '{') braceCount++;
-                else if (json[i] == '}')
-                {
-                    braceCount--;
-                    if (braceCount == 0)
-                    {
-                        endIndex = i + 1;
-                        break;
-                    }
-                }
-            }
-            
-            return json.Substring(startIndex, endIndex - startIndex);
-        }
-        else if (startChar == '[')
-        {
-            // Extract JSON array
-            int bracketCount = 0;
-            int endIndex = startIndex;
-            
-            for (int i = startIndex; i < json.Length; i++)
-            {
-                if (json[i] == '[') bracketCount++;
-                else if (json[i] == ']')
-                {
-                    bracketCount--;
-                    if (bracketCount == 0)
-                    {
-                        endIndex = i + 1;
-                        break;
-                    }
-                }
-            }
-            
-            return json.Substring(startIndex, endIndex - startIndex);
-        }
+        char endChar = (startChar == '{') ? '}' : ']';
+        int balance = 0;
         
+        for (int i = startIndex; i < json.Length; i++)
+        {
+            if (json[i] == startChar) balance++;
+            else if (json[i] == endChar) balance--;
+            
+            if (balance == 0)
+            {
+                return json.Substring(startIndex, i - startIndex + 1);
+            }
+        }
         return "{}";
     }
 
@@ -400,7 +354,6 @@ public class LudoClient : MonoBehaviour
         currentSessionId = data.sessionId;
         currentGameState = data.gameState;
 
-        // Find our player index
         foreach (var player in data.players)
         {
             if (player.playerId == myPlayerId)
@@ -425,9 +378,7 @@ public class LudoClient : MonoBehaviour
     private void HandleDiceRolled(string payloadJson)
     {
         var data = JsonUtility.FromJson<DiceRollPayload>(payloadJson);
-        
         Debug.Log($"Player {data.playerIndex} rolled {data.diceValue}");
-        
         OnDiceRolled?.Invoke(new DiceRollData
         {
             playerIndex = data.playerIndex,
@@ -441,9 +392,7 @@ public class LudoClient : MonoBehaviour
     {
         var data = JsonUtility.FromJson<TokenMovePayload>(payloadJson);
         currentGameState = data.gameState;
-        
         Debug.Log($"Player {data.playerIndex} moved token {data.tokenIndex}: {data.moveResult}");
-        
         OnTokenMoved?.Invoke(new TokenMoveData
         {
             playerIndex = data.playerIndex,
@@ -466,9 +415,7 @@ public class LudoClient : MonoBehaviour
     {
         var data = JsonUtility.FromJson<GameOverPayload>(payloadJson);
         isInGame = false;
-        
         Debug.Log($"Game Over! Winner: {data.winnerName} (Player {data.winnerIndex})");
-        
         OnGameOver?.Invoke(new GameOverData
         {
             winnerId = data.winnerId,
@@ -543,150 +490,39 @@ public class LudoClient : MonoBehaviour
             return;
         }
 
+        // CORRECTED: Serialize the object to a JSON string before sending.
         string json = JsonUtility.ToJson(message);
         websocket.SendText(json);
     }
 }
 
-// ==================== DATA STRUCTURES ====================
+// ==================== DATA STRUCTURES (for receiving from server) ====================
 
-[Serializable]
-public class MessageWrapper
-{
-    public string type;
-}
+[Serializable] public class MessageWrapper { public string type; }
+[Serializable] public class ConnectedPayload { public string playerId; public string message; }
+[Serializable] public class QueueJoinedPayload { public int playersInQueue; public string message; }
+[Serializable] public class MatchFoundPayload { public string sessionId; public int playerCount; public PlayerInfo[] players; public GameStateData gameState; }
+[Serializable] public class PlayerInfo { public string playerId; public string name; public int playerIndex; }
+[Serializable] public class GameStateData { public int turnCount; public int diceValue; public int consecutiveSixes; public int currentPlayer; public int playerCount; public int[] tokenPositions; }
+[Serializable] public class DiceRollPayload { public string playerId; public int playerIndex; public int diceValue; public int[] validMoves; public bool noValidMoves; }
+[Serializable] public class TokenMovePayload { public string playerId; public int playerIndex; public int tokenIndex; public string moveResult; public int newPosition; public bool hasWon; public GameStateData gameState; }
+[Serializable] public class GameStatePayload { public string sessionId; public int playerIndex; public int currentPlayer; public GameStateData gameState; }
+[Serializable] public class GameOverPayload { public string winnerId; public int winnerIndex; public string winnerName; }
+[Serializable] public class PlayerEventPayload { public string playerId; }
+[Serializable] public class PlayerLeftPayload { public string playerId; public string playerName; }
+[Serializable] public class ErrorPayload { public string error; }
 
-[Serializable]
-public class ConnectedPayload
-{
-    public string playerId;
-    public string message;
-}
+// ==================== REQUEST DATA STRUCTURES (for sending to server) ====================
 
-[Serializable]
-public class QueueJoinedPayload
-{
-    public int playersInQueue;
-    public string message;
-}
+[Serializable] public class ClientMessage<T> { public string type; public T payload; }
+[Serializable] public class EmptyPayload { }
+[Serializable] public class JoinQueueRequest { public string playerName; public string roomType; public int playerCount; }
+[Serializable] public class RollDiceRequest { public int forcedValue; }
+[Serializable] public class MoveTokenRequest { public int tokenIndex; }
 
-[Serializable]
-public class MatchFoundPayload
-{
-    public string sessionId;
-    public int playerCount;
-    public PlayerInfo[] players;
-    public GameStateData gameState;
-}
+// ==================== EVENT DATA CLASSES (for Unity Events) ====================
 
-[Serializable]
-public class PlayerInfo
-{
-    public string playerId;
-    public string name;
-    public int playerIndex;
-}
-
-[Serializable]
-public class GameStateData
-{
-    public int turnCount;
-    public int diceValue;
-    public int consecutiveSixes;
-    public int currentPlayer;
-    public int playerCount;
-    public int[] tokenPositions;
-}
-
-[Serializable]
-public class DiceRollPayload
-{
-    public string playerId;
-    public int playerIndex;
-    public int diceValue;
-    public int[] validMoves;
-    public bool noValidMoves;
-}
-
-[Serializable]
-public class TokenMovePayload
-{
-    public string playerId;
-    public int playerIndex;
-    public int tokenIndex;
-    public string moveResult;
-    public int newPosition;
-    public bool hasWon;
-    public GameStateData gameState;
-}
-
-[Serializable]
-public class GameStatePayload
-{
-    public string sessionId;
-    public int playerIndex;
-    public int currentPlayer;
-    public GameStateData gameState;
-}
-
-[Serializable]
-public class GameOverPayload
-{
-    public string winnerId;
-    public int winnerIndex;
-    public string winnerName;
-}
-
-[Serializable]
-public class PlayerEventPayload
-{
-    public string playerId;
-}
-
-[Serializable]
-public class PlayerLeftPayload
-{
-    public string playerId;
-    public string playerName;
-}
-
-[Serializable]
-public class ErrorPayload
-{
-    public string error;
-}
-
-// Event Data Classes
-public class MatchData
-{
-    public string sessionId;
-    public int playerCount;
-    public int myPlayerIndex;
-    public PlayerInfo[] players;
-    public GameStateData gameState;
-}
-
-public class DiceRollData
-{
-    public int playerIndex;
-    public int diceValue;
-    public int[] validMoves;
-    public bool noValidMoves;
-}
-
-public class TokenMoveData
-{
-    public int playerIndex;
-    public int tokenIndex;
-    public string moveResult;
-    public int newPosition;
-    public bool hasWon;
-    public GameStateData gameState;
-}
-
-public class GameOverData
-{
-    public string winnerId;
-    public int winnerIndex;
-    public string winnerName;
-}
+public class MatchData { public string sessionId; public int playerCount; public int myPlayerIndex; public PlayerInfo[] players; public GameStateData gameState; }
+public class DiceRollData { public int playerIndex; public int diceValue; public int[] validMoves; public bool noValidMoves; }
+public class TokenMoveData { public int playerIndex; public int tokenIndex; public string moveResult; public int newPosition; public bool hasWon; public GameStateData gameState; }
+public class GameOverData { public string winnerId; public int winnerIndex; public string winnerName; }
