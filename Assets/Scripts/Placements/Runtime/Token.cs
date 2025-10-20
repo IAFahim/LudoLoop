@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Placements.Runtime
 {
@@ -12,6 +14,8 @@ namespace Placements.Runtime
 
         private MaterialPropertyBlock _propBlock;
         private static readonly int Color = Shader.PropertyToID("_Color");
+
+        public UnityEvent<int> onTokenClicked;
 
         private void OnValidate()
         {
@@ -47,6 +51,16 @@ namespace Placements.Runtime
         {
             selfRenderer.material = normalMaterial;
             SetColor(tokenIndex);
+        }
+
+        private void OnDisable()
+        {
+            onTokenClicked.RemoveAllListeners();
+        }
+
+        public void SetHighlight(bool active)
+        {
+            
         }
     }
 }

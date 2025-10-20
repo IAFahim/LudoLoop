@@ -1,6 +1,7 @@
 using System;
 using NativeWebSocket;
 using UnityEngine;
+using UnityEngine.Events; // Step 1: Add the Unity Events namespace
 
 namespace Network.Runtime.Network.Runtime
 {
@@ -15,17 +16,20 @@ namespace Network.Runtime.Network.Runtime
         [SerializeField] private string playerName = "Player";
 
         [Header("Events")]
-        public Action<string> OnConnected;
-        public Action OnDisconnected;
-        public Action<string> OnError;
-        public Action<int> OnQueueJoined; // Players in queue
-        public Action<string> OnPlayerLeft;
-        public Action<MatchData> OnMatchFound;
-        public Action<DiceRollData> OnDiceRolled;
-        public Action<TokenMoveData> OnTokenMoved;
-        public Action<GameOverData> OnGameOver;
-        public Action<string> OnPlayerDisconnected;
-        public Action<string> OnPlayerReconnected;
+        // Step 2: Convert Actions to UnityEvents
+        public UnityEvent<string> OnConnected;
+        public UnityEvent OnDisconnected;
+        public UnityEvent<string> OnError;
+        public UnityEvent<int> OnQueueJoined;
+        public UnityEvent<string> OnPlayerLeft;
+        public UnityEvent<string> OnPlayerDisconnected;
+        public UnityEvent<string> OnPlayerReconnected;
+
+        // Step 3: Use custom UnityEvent subclasses for complex data types
+        public MatchDataEvent OnMatchFound;
+        public DiceRollDataEvent OnDiceRolled;
+        public TokenMoveDataEvent OnTokenMoved;
+        public GameOverDataEvent OnGameOver;
 
         private WebSocket websocket;
         private string myPlayerId;
@@ -37,9 +41,6 @@ namespace Network.Runtime.Network.Runtime
 
         // ==================== PUBLIC API ====================
 
-        /// <summary>
-        /// Connect to the game server
-        /// </summary>
         public async void Connect()
         {
             if (websocket != null && websocket.State == WebSocketState.Open)
@@ -52,10 +53,7 @@ namespace Network.Runtime.Network.Runtime
             {
                 websocket = new WebSocket(serverUrl);
 
-                websocket.OnOpen += () =>
-                {
-                    Debug.Log("Connected to Ludo Game Server");
-                };
+                websocket.OnOpen += () => { Debug.Log("Connected to Ludo Game Server"); };
 
                 websocket.OnError += (e) =>
                 {
@@ -86,9 +84,6 @@ namespace Network.Runtime.Network.Runtime
             }
         }
 
-        /// <summary>
-        /// Disconnect from the server
-        /// </summary>
         public async void Disconnect()
         {
             if (websocket != null)
@@ -98,164 +93,62 @@ namespace Network.Runtime.Network.Runtime
             }
         }
 
-        /// <summary>
-        /// Find a match - automatically joins queue and matches you with other players
-        /// </summary>
-        /// <param name="roomType">Room type (e.g., "casual", "ranked", "100coins")</param>
-        /// <param name="playerCount">Number of players (2-4)</param>
         public void FindMatch(string roomType = "casual", int playerCount = 4)
         {
-            if (isInGame)
-            {
-                Debug.LogWarning("Already in a game");
-                return;
-            }
-
-            if (isInQueue)
-            {
-                Debug.LogWarning("Already in queue");
-                return;
-            }
-
-            // CHANGED: Using strongly-typed request classes
-            var requestPayload = new JoinQueueRequest
-            {
-                playerName = this.playerName,
-                roomType = roomType,
-                playerCount = playerCount
-            };
-
-            var message = new ClientMessage<JoinQueueRequest>
-            {
-                type = "join_queue",
-                payload = requestPayload
-            };
-
+            if (isInGame) { Debug.LogWarning("Already in a game"); return; }
+            if (isInQueue) { Debug.LogWarning("Already in queue"); return; }
+            
+            var requestPayload = new JoinQueueRequest { playerName = this.playerName, roomType = roomType, playerCount = playerCount };
+            var message = new ClientMessage<JoinQueueRequest> { type = "join_queue", payload = requestPayload };
             SendMessage(message);
-
             isInQueue = true;
             Debug.Log($"Finding match... ({roomType}, {playerCount} players)");
         }
 
-        /// <summary>
-        /// Leave the matchmaking queue
-        /// </summary>
         public void LeaveQueue()
         {
-            if (!isInQueue)
-            {
-                Debug.LogWarning("Not in queue");
-                return;
-            }
+            if (!isInQueue) { Debug.LogWarning("Not in queue"); return; }
 
-            // CHANGED: Using strongly-typed request classes
-            var message = new ClientMessage<EmptyPayload>
-            {
-                type = "leave_queue",
-                payload = new EmptyPayload()
-            };
-
+            var message = new ClientMessage<EmptyPayload> { type = "leave_queue", payload = new EmptyPayload() };
             SendMessage(message);
             isInQueue = false;
         }
 
-        /// <summary>
-        /// Roll the dice (must be your turn)
-        /// </summary>
-        /// <param name="forcedValue">Optional: Force specific dice value 1-6 for testing</param>
         public void RollDice(int forcedValue = 0)
         {
-            if (!isInGame)
-            {
-                Debug.LogWarning("Not in a game");
-                return;
-            }
+            if (!isInGame) { Debug.LogWarning("Not in a game"); return; }
 
-            // CHANGED: Using strongly-typed request classes
-            var requestPayload = new RollDiceRequest
-            {
-                forcedValue = forcedValue
-            };
-
-            var message = new ClientMessage<RollDiceRequest>
-            {
-                type = "roll_dice",
-                payload = requestPayload
-            };
-
+            var requestPayload = new RollDiceRequest { forcedValue = forcedValue };
+            var message = new ClientMessage<RollDiceRequest> { type = "roll_dice", payload = requestPayload };
             SendMessage(message);
         }
 
-        /// <summary>
-        /// Move a token (must have rolled dice first)
-        /// </summary>
-        /// <param name="tokenIndex">Token index (0-15, where 0-3 is player 0, 4-7 is player 1, etc.)</param>
         public void MoveToken(int tokenIndex)
         {
-            if (!isInGame)
-            {
-                Debug.LogWarning("Not in a game");
-                return;
-            }
-
-            // CHANGED: Using strongly-typed request classes
-            var requestPayload = new MoveTokenRequest
-            {
-                tokenIndex = tokenIndex
-            };
-
-            var message = new ClientMessage<MoveTokenRequest>
-            {
-                type = "move_token",
-                payload = requestPayload
-            };
-
+            if (!isInGame) { Debug.LogWarning("Not in a game"); return; }
+            
+            var requestPayload = new MoveTokenRequest { tokenIndex = tokenIndex };
+            var message = new ClientMessage<MoveTokenRequest> { type = "move_token", payload = requestPayload };
             SendMessage(message);
         }
 
-        /// <summary>
-        /// Request current game state
-        /// </summary>
         public void GetGameState()
         {
-            if (!isInGame)
-            {
-                Debug.LogWarning("Not in a game");
-                return;
-            }
+            if (!isInGame) { Debug.LogWarning("Not in a game"); return; }
 
-            // CHANGED: Using strongly-typed request classes
-            var message = new ClientMessage<EmptyPayload>
-            {
-                type = "get_state",
-                payload = new EmptyPayload()
-            };
-
+            var message = new ClientMessage<EmptyPayload> { type = "get_state", payload = new EmptyPayload() };
             SendMessage(message);
         }
 
-        /// <summary>
-        /// Leave the current game
-        /// </summary>
         public void LeaveGame()
         {
-            if (!isInGame)
-            {
-                Debug.LogWarning("Not in a game");
-                return;
-            }
+            if (!isInGame) { Debug.LogWarning("Not in a game"); return; }
 
-            // CHANGED: Using strongly-typed request classes
-            var message = new ClientMessage<EmptyPayload>
-            {
-                type = "leave_game",
-                payload = new EmptyPayload()
-            };
-
+            var message = new ClientMessage<EmptyPayload> { type = "leave_game", payload = new EmptyPayload() };
             SendMessage(message);
             isInGame = false;
         }
-
+        
         // ==================== GETTERS ====================
 
         public string GetPlayerId() => myPlayerId;
@@ -456,28 +349,22 @@ namespace Network.Runtime.Network.Runtime
 
         private void Update()
         {
-#if !UNITY_WEBGL || UNITY_EDITOR
+            #if !UNITY_WEBGL || UNITY_EDITOR
             if (websocket != null)
             {
                 websocket.DispatchMessageQueue();
             }
-#endif
+            #endif
         }
 
         private void OnDestroy()
         {
-            if (websocket != null)
-            {
-                websocket.Close();
-            }
+            if (websocket != null) { websocket.Close(); }
         }
 
         private async void OnApplicationQuit()
         {
-            if (websocket != null)
-            {
-                await websocket.Close();
-            }
+            if (websocket != null) { await websocket.Close(); }
         }
 
         // ==================== UTILITIES ====================
@@ -489,8 +376,7 @@ namespace Network.Runtime.Network.Runtime
                 Debug.LogError("Not connected to server");
                 return;
             }
-
-            // CORRECTED: Serialize the object to a JSON string before sending.
+            
             string json = JsonUtility.ToJson(message);
             websocket.SendText(json);
         }
@@ -522,8 +408,15 @@ namespace Network.Runtime.Network.Runtime
 
 // ==================== EVENT DATA CLASSES (for Unity Events) ====================
 
-    public class MatchData { public string sessionId; public int playerCount; public int myPlayerIndex; public PlayerInfo[] players; public GameStateData gameState; }
-    public class DiceRollData { public int playerIndex; public int diceValue; public int[] validMoves; public bool noValidMoves; }
-    public class TokenMoveData { public int playerIndex; public int tokenIndex; public string moveResult; public int newPosition; public bool hasWon; public GameStateData gameState; }
-    public class GameOverData { public string winnerId; public int winnerIndex; public string winnerName; }
+    // Step 4: Make the data classes serializable so Unity can handle them
+    [Serializable] public class MatchData { public string sessionId; public int playerCount; public int myPlayerIndex; public PlayerInfo[] players; public GameStateData gameState; }
+    [Serializable] public class DiceRollData { public int playerIndex; public int diceValue; public int[] validMoves; public bool noValidMoves; }
+    [Serializable] public class TokenMoveData { public int playerIndex; public int tokenIndex; public string moveResult; public int newPosition; public bool hasWon; public GameStateData gameState; }
+    [Serializable] public class GameOverData { public string winnerId; public int winnerIndex; public string winnerName; }
+
+    // Step 5: Create serializable UnityEvent subclasses for the custom data types
+    [Serializable] public class MatchDataEvent : UnityEvent<MatchData> { }
+    [Serializable] public class DiceRollDataEvent : UnityEvent<DiceRollData> { }
+    [Serializable] public class TokenMoveDataEvent : UnityEvent<TokenMoveData> { }
+    [Serializable] public class GameOverDataEvent : UnityEvent<GameOverData> { }
 }

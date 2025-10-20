@@ -699,7 +699,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: 'Roll
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -791,7 +793,7 @@ GameObject:
   - component: {fileID: 248688916}
   - component: {fileID: 248688915}
   m_Layer: 5
-  m_Name: Button.1
+  m_Name: Roll Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1199,6 +1201,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: Network.Runtime::LudoClient
   serverUrl: ws://localhost:8080
   playerName: Player
+  OnConnected:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDisconnected:
+    m_PersistentCalls:
+      m_Calls: []
+  OnError:
+    m_PersistentCalls:
+      m_Calls: []
+  OnQueueJoined:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerDisconnected:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerReconnected:
+    m_PersistentCalls:
+      m_Calls: []
+  OnMatchFound:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDiceRolled:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTokenMoved:
+    m_PersistentCalls:
+      m_Calls: []
+  OnGameOver:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &370457530
 Transform:
   m_ObjectHideFlags: 0
@@ -1239,6 +1274,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Placements.Runtime::LudoGameManager
   ludoClient: {fileID: 370457529}
+  gameType: casual
+  playerCount: 4
   tiles: {fileID: 1743346533}
   tokenPrefab: {fileID: 7425773500103030453, guid: 4d3e461ebc5a247fd924ff36aa04daeb, type: 3}
   findMatchButton: {fileID: 1993298240}
@@ -2586,7 +2623,8 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 120694755699288973, guid: 4d3e461ebc5a247fd924ff36aa04daeb, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -3780,7 +3818,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Find Match
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4875,7 +4913,7 @@ GameObject:
   - component: {fileID: 1993298241}
   - component: {fileID: 1993298240}
   m_Layer: 5
-  m_Name: Button
+  m_Name: Find Match Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

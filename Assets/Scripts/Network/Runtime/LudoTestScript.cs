@@ -1,11 +1,7 @@
-using System;
+
 using Network.Runtime.Network.Runtime;
 using UnityEngine;
 
-/// <summary>
-/// Minimal test script for LudoClient - No UI needed, just keyboard controls
-/// Attach this alongside LudoClient component and press Play
-/// </summary>
 public class LudoTestScript : MonoBehaviour
 {
     private LudoClient client;
@@ -17,26 +13,48 @@ public class LudoTestScript : MonoBehaviour
         client = GetComponent<LudoClient>();
         
         // Subscribe to events
-        client.OnConnected += OnConnected;
-        client.OnQueueJoined += (count) => Debug.Log($"⏳ In queue. Players: {count}");
-        client.OnMatchFound += (match) => Debug.Log($"🎮 Match found! You are Player {match.myPlayerIndex}");
-        client.OnDiceRolled += OnDiceRolled;
-        client.OnTokenMoved += (move) => {
-            Debug.Log($"🎯 Token moved: {move.moveResult}");
-            hasRolled = false;
-            if (client.IsMyTurn()) Debug.Log("🎲 Your turn! Press R to roll");
-        };
-        client.OnGameOver += (data) => Debug.Log($"🏆 Game Over! Winner: {data.winnerName}");
-        client.OnError += (err) => Debug.LogError($"❌ Error: {err}");
-        // Auto-connect
+        client.OnConnected.AddListener(OnConnected);
+        client.OnQueueJoined.AddListener(OnQueueJoined);
+        client.OnMatchFound.AddListener(AddListener);
+        client.OnDiceRolled.AddListener(OnDiceRolled);
+        client.OnTokenMoved.AddListener(OnTokenMove);
+        client.OnGameOver.AddListener(OnGameOver);
+        client.OnError.AddListener(OnError);
         Debug.Log("🔌 Connecting to server...");
         client.Connect();
+    }
+
+    private void OnError(string err)
+    {
+        Debug.LogError($"❌ Error: {err}");
+    }
+
+    private void OnGameOver(GameOverData data)
+    {
+        Debug.Log($"🏆 Game Over! Winner: {data.winnerName}");
+    }
+
+    private void OnTokenMove(TokenMoveData move)
+    {
+        Debug.Log($"🎯 Token moved: {move.moveResult}");
+        hasRolled = false;
+        if (client.IsMyTurn()) Debug.Log("🎲 Your turn! Press roll");
+    }
+
+    private void AddListener(MatchData match)
+    {
+        Debug.Log($"🎮 Match found! You are Player {match.myPlayerIndex}");
     }
 
     private void OnConnected(string id)
     {
         Debug.Log($"✓ Connected! ID: {id}");
         client.FindMatch();
+    }
+
+    private void OnQueueJoined(int count)
+    {
+        Debug.Log($"⏳ In queue. Players: {count}");
     }
 
 
