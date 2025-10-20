@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using LudoGame.Runtime;
-using Network.Runtime.Network.Runtime;
+using Network.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

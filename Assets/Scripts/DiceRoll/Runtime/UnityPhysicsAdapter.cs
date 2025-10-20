@@ -6,8 +6,6 @@ namespace DiceRoll.Runtime
     {
         public static void ApplyRollForce(Rigidbody rb, RollForceData forceData)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
             rb.isKinematic = false;
 
             rb.AddForce(forceData.force, ForceMode.Impulse);
@@ -16,8 +14,6 @@ namespace DiceRoll.Runtime
 
         public static void SetKinematic(Rigidbody rb, Transform transform, in Vector3 position, in Quaternion rotation)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
             rb.isKinematic = true;
             transform.position = position;
             transform.rotation = rotation;
