@@ -6,6 +6,7 @@ namespace Placements.Runtime
     public class Tiles : MonoBehaviour
     {
         public Vector3[] tiles;
+        public float heightOffset;
         public ColorTiles[] groupedTiles;
 
         private void OnValidate()
@@ -33,6 +34,13 @@ namespace Placements.Runtime
             foreach (var tile in groupedTiles[0].EndTiles)
             {
                 totalTiles.Add(tile.transform.position);
+            }
+
+            for (var index = 0; index < totalTiles.Count; index++)
+            {
+                var tile = totalTiles[index];
+                tile.y += heightOffset;
+                totalTiles[index] = tile;
             }
 
             tiles = totalTiles.ToArray();

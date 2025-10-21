@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29710a4fb24012a6de7f33fee62e15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PlayerSpawner
-  pawnBasePrefab: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  tokenBasePrefab: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
   pawnBasePositions:
   - {x: -6.2, y: -0.12, z: -6.2}
   - {x: -6.2, y: -0.12, z: 6.2}
@@ -1093,8 +1093,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 100
   field of view: 60
-  orthographic: 0
-  orthographic size: 15
+  orthographic: 1
+  orthographic size: 18.9
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -1118,13 +1118,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
-  m_LocalPosition: {x: 0, y: 35, z: -17.56}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 35, z: -1.87}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 60, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1225,10 +1225,34 @@ MonoBehaviour:
       m_Calls: []
   OnMatchFound:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 370457532}
+        m_TargetAssemblyTypeName: Placements.Runtime.LudoGameManager, Placements.Runtime
+        m_MethodName: HandleMatchFound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnDiceRolled:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 370457532}
+        m_TargetAssemblyTypeName: Placements.Runtime.LudoGameManager, Placements.Runtime
+        m_MethodName: HandleDiceRolled
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnTokenMoved:
     m_PersistentCalls:
       m_Calls:
@@ -1290,17 +1314,16 @@ MonoBehaviour:
   gameType: casual
   playerCount: 4
   tiles: {fileID: 1743346533}
-  tokenPrefab: {fileID: 7425773500103030453, guid: 4d3e461ebc5a247fd924ff36aa04daeb, type: 3}
   findMatchButton: {fileID: 1993298240}
   rollDiceButton: {fileID: 248688915}
   turnInfoText: {fileID: 1222506086}
   diceRollText: {fileID: 772681921}
   winnerText: {fileID: 737505702}
-  playerBaseParents:
-  - {fileID: 1188565623}
-  - {fileID: 63390220}
-  - {fileID: 682098715}
-  - {fileID: 215952204}
+  tokenBases:
+  - {fileID: 1868515036}
+  - {fileID: 728639595}
+  - {fileID: 682098717}
+  - {fileID: 1876957011}
 --- !u!1001 &395523559
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1948,6 +1971,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6108104132278460849, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
   m_PrefabInstance: {fileID: 449481815}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &682098717 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 449481815}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!43 &723183734
 Mesh:
   m_ObjectHideFlags: 0
@@ -2126,6 +2160,17 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!114 &728639595 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 875822831}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!1 &737505700
 GameObject:
   m_ObjectHideFlags: 0
@@ -4676,58 +4721,59 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.Tiles
   tiles:
-  - {x: -1.3000023, y: 0, z: -6.2000017}
-  - {x: -1.2000017, y: 0, z: -5.2000012}
-  - {x: -1.2000016, y: 0, z: -4.2000012}
-  - {x: -1.2000015, y: 0, z: -3.200001}
-  - {x: -1.2000011, y: 0, z: -2.2000008}
-  - {x: -2.2, y: 0, z: -1.1999998}
-  - {x: -3.2000008, y: 0, z: -1.2000008}
-  - {x: -4.200001, y: 0, z: -1.2000008}
-  - {x: -5.200001, y: 0, z: -1.2000005}
-  - {x: -6.200001, y: 0, z: -1.2000004}
-  - {x: -7.2000003, y: 0, z: -1.2000017}
-  - {x: -7.2, y: 0, z: 0}
-  - {x: -7.2000017, y: 0, z: 1.1999999}
-  - {x: -6.200001, y: 0, z: 1.3000013}
-  - {x: -5.200001, y: 0, z: 1.2000011}
-  - {x: -4.200001, y: 0, z: 1.200001}
-  - {x: -3.2000005, y: 0, z: 1.2000009}
-  - {x: -2.2000005, y: 0, z: 1.2000008}
-  - {x: -1.2000002, y: 0, z: 2.2000003}
-  - {x: -1.2000014, y: 0, z: 3.2000012}
-  - {x: -1.2000014, y: 0, z: 4.2000012}
-  - {x: -1.2000011, y: 0, z: 5.200001}
-  - {x: -1.2000015, y: 0, z: 6.2000017}
-  - {x: -1.2000028, y: 0, z: 7.2000017}
-  - {x: -0.0000009536743, y: 0, z: 7.200001}
-  - {x: 1.1999991, y: 0, z: 7.2000027}
-  - {x: 1.3000004, y: 0, z: 6.2000017}
-  - {x: 1.2000008, y: 0, z: 5.2000012}
-  - {x: 1.2000006, y: 0, z: 4.2000012}
-  - {x: 1.2000005, y: 0, z: 3.200001}
-  - {x: 1.2000006, y: 0, z: 2.2000008}
-  - {x: 2.2, y: 0, z: 1.1999998}
-  - {x: 3.2000008, y: 0, z: 1.2000008}
-  - {x: 4.200001, y: 0, z: 1.2000008}
-  - {x: 5.200001, y: 0, z: 1.2000005}
-  - {x: 6.200001, y: 0, z: 1.2000004}
-  - {x: 7.2000003, y: 0, z: 1.2000017}
-  - {x: 7.2, y: 0, z: 0}
-  - {x: 7.2000017, y: 0, z: -1.1999999}
-  - {x: 6.200001, y: 0, z: -1.3000013}
-  - {x: 5.200001, y: 0, z: -1.2000011}
-  - {x: 4.200001, y: 0, z: -1.200001}
-  - {x: 3.2000005, y: 0, z: -1.2000009}
-  - {x: 2.2000005, y: 0, z: -1.2000008}
-  - {x: 1.1999997, y: 0, z: -2.2000003}
-  - {x: 1.2000004, y: 0, z: -3.2000012}
-  - {x: 1.2000004, y: 0, z: -4.2000012}
-  - {x: 1.2000002, y: 0, z: -5.2000017}
-  - {x: 1.1999996, y: 0, z: -6.2000017}
-  - {x: 1.2000009, y: 0, z: -7.2000012}
-  - {x: -0.0000009536743, y: 0, z: -7.200001}
-  - {x: -1.200001, y: 0, z: -7.2000027}
+  - {x: -1.3000023, y: 0.5, z: -6.2000017}
+  - {x: -1.2000017, y: 0.5, z: -5.2000012}
+  - {x: -1.2000016, y: 0.5, z: -4.2000012}
+  - {x: -1.2000015, y: 0.5, z: -3.200001}
+  - {x: -1.2000011, y: 0.5, z: -2.2000008}
+  - {x: -2.2, y: 0.5, z: -1.1999998}
+  - {x: -3.2000008, y: 0.5, z: -1.2000008}
+  - {x: -4.200001, y: 0.5, z: -1.2000008}
+  - {x: -5.200001, y: 0.5, z: -1.2000005}
+  - {x: -6.200001, y: 0.5, z: -1.2000004}
+  - {x: -7.2000003, y: 0.5, z: -1.2000017}
+  - {x: -7.2, y: 0.5, z: 0}
+  - {x: -7.2000017, y: 0.5, z: 1.1999999}
+  - {x: -6.200001, y: 0.5, z: 1.3000013}
+  - {x: -5.200001, y: 0.5, z: 1.2000011}
+  - {x: -4.200001, y: 0.5, z: 1.200001}
+  - {x: -3.2000005, y: 0.5, z: 1.2000009}
+  - {x: -2.2000005, y: 0.5, z: 1.2000008}
+  - {x: -1.2000002, y: 0.5, z: 2.2000003}
+  - {x: -1.2000014, y: 0.5, z: 3.2000012}
+  - {x: -1.2000014, y: 0.5, z: 4.2000012}
+  - {x: -1.2000011, y: 0.5, z: 5.200001}
+  - {x: -1.2000015, y: 0.5, z: 6.2000017}
+  - {x: -1.2000028, y: 0.5, z: 7.2000017}
+  - {x: -0.0000009536743, y: 0.5, z: 7.200001}
+  - {x: 1.1999991, y: 0.5, z: 7.2000027}
+  - {x: 1.3000004, y: 0.5, z: 6.2000017}
+  - {x: 1.2000008, y: 0.5, z: 5.2000012}
+  - {x: 1.2000006, y: 0.5, z: 4.2000012}
+  - {x: 1.2000005, y: 0.5, z: 3.200001}
+  - {x: 1.2000006, y: 0.5, z: 2.2000008}
+  - {x: 2.2, y: 0.5, z: 1.1999998}
+  - {x: 3.2000008, y: 0.5, z: 1.2000008}
+  - {x: 4.200001, y: 0.5, z: 1.2000008}
+  - {x: 5.200001, y: 0.5, z: 1.2000005}
+  - {x: 6.200001, y: 0.5, z: 1.2000004}
+  - {x: 7.2000003, y: 0.5, z: 1.2000017}
+  - {x: 7.2, y: 0.5, z: 0}
+  - {x: 7.2000017, y: 0.5, z: -1.1999999}
+  - {x: 6.200001, y: 0.5, z: -1.3000013}
+  - {x: 5.200001, y: 0.5, z: -1.2000011}
+  - {x: 4.200001, y: 0.5, z: -1.200001}
+  - {x: 3.2000005, y: 0.5, z: -1.2000009}
+  - {x: 2.2000005, y: 0.5, z: -1.2000008}
+  - {x: 1.1999997, y: 0.5, z: -2.2000003}
+  - {x: 1.2000004, y: 0.5, z: -3.2000012}
+  - {x: 1.2000004, y: 0.5, z: -4.2000012}
+  - {x: 1.2000002, y: 0.5, z: -5.2000017}
+  - {x: 1.1999996, y: 0.5, z: -6.2000017}
+  - {x: 1.2000009, y: 0.5, z: -7.2000012}
+  - {x: -0.0000009536743, y: 0.5, z: -7.200001}
+  - {x: -1.200001, y: 0.5, z: -7.2000027}
+  heightOffset: 0.5
   groupedTiles:
   - {fileID: 1504464449}
   - {fileID: 313124456}
@@ -4771,7 +4817,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1746582645
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4916,6 +4962,28 @@ Transform:
   - {fileID: 1045115626}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1868515036 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 256134012}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
+--- !u!114 &1876957011 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 1575640996}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!1 &1993298238
 GameObject:
   m_ObjectHideFlags: 0
@@ -5270,7 +5338,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1001 &1911132936778365052
 PrefabInstance:
   m_ObjectHideFlags: 0

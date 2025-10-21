@@ -15,7 +15,6 @@ namespace Placements.Runtime
         [SerializeField] private string gameType="casual";
         [SerializeField] private int playerCount = 4;
         [SerializeField] private Tiles tiles;
-        [SerializeField] private GameObject tokenPrefab;
 
         [Header("UI References")]
         [SerializeField] private Button findMatchButton;
@@ -25,8 +24,8 @@ namespace Placements.Runtime
         [SerializeField] private TextMeshProUGUI winnerText;
 
         [Header("Game Setup")]
-        [SerializeField] private Transform[] playerBaseParents; // Array of 4 empty GameObjects where tokens start
-
+        [SerializeField] private TokenBase[] tokenBases; // Array of 4 empty GameObjects where tokens Rest
+        
         // --- State ---
         private LudoGameState currentGameState;
         private List<Token> spawnedTokens = new List<Token>();
@@ -157,17 +156,16 @@ namespace Placements.Runtime
 
         private void SpawnTokens()
         {
-            for (int i = 0; i < currentGameState.PlayerCount * 4; i++)
+            for (int i = 0; i < currentGameState.PlayerCount; i++)
             {
                 int playerIndex = i / 4;
-                GameObject tokenGO = Instantiate(tokenPrefab, playerBaseParents[playerIndex]);
-                tokenGO.name = $"Token_{i}";
-
-                var controller = tokenGO.GetComponent<Token>();
-                controller.tokenIndex = i;
-                controller.onTokenClicked.AddListener(OnTokenSelected);
-            
-                spawnedTokens.Add(controller);
+                var tokens = tokenBases[i].Place(i);
+                for (int t = 0; t < 4; t++)
+                {
+                    var token = tokens[i];
+                    token.onTokenClicked.AddListener(OnTokenSelected);
+                }
+                spawnedTokens.AddRange(tokens);
             }
         }
     
@@ -176,19 +174,18 @@ namespace Placements.Runtime
             for (int i = 0; i < spawnedTokens.Count; i++)
             {
                 sbyte boardPos = currentGameState.TokenPositions[i];
-                int playerIndex = i / 4;
 
-                Vector3 targetPosition;
+                int playerIndex = i / 4;
                 if (boardPos == LudoBoard.PosBase)
                 {
-                    targetPosition = playerBaseParents[playerIndex].transform.position;
+                    int playerTokenIndex = i % 4;
+                    tokenBases[playerIndex].MoveTokenToBase(playerTokenIndex);
                 }
                 else
                 {
-                    targetPosition = tiles.GetTileBoardPosition(boardPos, playerIndex);
+                    var targetPosition = tiles.GetTileBoardPosition(boardPos, playerIndex);
+                    spawnedTokens[i].transform.position = targetPosition;
                 }
-            
-                spawnedTokens[i].transform.position = targetPosition;
             }
         }
 

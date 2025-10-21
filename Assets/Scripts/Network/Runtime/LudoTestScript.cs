@@ -102,7 +102,7 @@ namespace Network.Runtime
             // context.control.name gives us the name of the key pressed (e.g., "1", "2")
             if (int.TryParse(context.control.name, out int tokenNumber))
             {
-                if (tokenNumber >= 1 && tokenNumber <= 4)
+                if (tokenNumber is >= 1 and <= 4)
                 {
                     int globalIndex = client.GetPlayerIndex() * 4 + (tokenNumber - 1);
                     if (System.Array.IndexOf(validMoves, globalIndex) >= 0)
@@ -180,7 +180,5 @@ namespace Network.Runtime
         }
     
         #endregion
-    
-        // The Update() method is no longer needed for input!
     }
 }

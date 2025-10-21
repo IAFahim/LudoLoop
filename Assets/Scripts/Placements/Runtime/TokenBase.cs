@@ -4,17 +4,19 @@ using UnityEngine.Serialization;
 namespace Placements.Runtime
 {
     // Minimal MonoBehaviour wrapper
-    public class PawnBase : MonoBehaviour
+    public class TokenBase : MonoBehaviour
     {
         [FormerlySerializedAs("pawnData")] [SerializeField] private TokenData tokenData;
         [SerializeField] private PlacementConfig config = PlacementConfig.Default();
+
         [SerializeField] private Token[] tokens;
-        
+        [SerializeField] private Vector3[] tokenBasePositions;
+
         public Token[] Tokens => tokens;
 
-        public void Place(int teamId)
+        public Token[] Place(int teamId)
         {
-            CircularPlacement.SpawnPawns(config, transform.position, tokenData.prefab, out GameObject[] spawnedPawns);
+            tokenBasePositions = CircularPlacement.SpawnPawns(config, transform.position, tokenData.prefab, out GameObject[] spawnedPawns);
             tokens = new Token[4];
             for (var i = 0; i < spawnedPawns.Length; i++)
             {
@@ -22,6 +24,13 @@ namespace Placements.Runtime
                 tokenColor.SetTokenIndex(teamId);
                 tokens[i] = tokenColor;
             }
+
+            return tokens;
+        }
+
+        public void MoveTokenToBase(int index)
+        {
+            tokens[index].transform.position = tokenBasePositions[index];
         }
 
         public void OnPawnStart(int tokenIndex)
