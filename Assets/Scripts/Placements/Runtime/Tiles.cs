@@ -86,7 +86,7 @@ namespace Placements.Runtime
             Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             for (int i = 0; i < tiles.Length; i++)
             {
-                UnityEditor.Handles.Label(tiles[i], i.ToString(), style);
+                UnityEditor.Handles.Label(tiles[i], (i + 1).ToString(), style);
             }
         }
 #endif
