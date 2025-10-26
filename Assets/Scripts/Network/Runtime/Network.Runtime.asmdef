@@ -2,9 +2,7 @@
     "name": "Network.Runtime",
     "references": [
         "LudoGame.Runtime",
-        "Unity.TextMeshPro",
-        "endel.nativewebsocket",
-        "Unity.InputSystem"
+        "endel.nativewebsocket"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

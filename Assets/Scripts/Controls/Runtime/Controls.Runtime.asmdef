@@ -1,0 +1,6 @@
+{
+  "name": "Controls.Runtime",
+  "references": [
+    "Unity.InputSystem"
+  ]
+}

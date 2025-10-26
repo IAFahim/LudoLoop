@@ -1,14 +1,11 @@
-using System;
 using System.Linq;
-using LudoGame.Runtime;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Placements.Runtime
 {
     public class PlayerSpawner : MonoBehaviour
     {
-        [FormerlySerializedAs("pawnBasePrefab")] public TokenBase tokenBasePrefab;
+        public TokenBase tokenBasePrefab;
         public Vector3[] pawnBasePositions;
         public TokenBase[] pawnBases;
 
@@ -28,10 +25,8 @@ namespace Placements.Runtime
             }
         }
 
-        public void CreateBase(LudoGameState ludoGameState)
+        public void CreateBase(int playerCount)
         {
-            // Ensure pawnBases array is initialized
-            var playerCount = ludoGameState.PlayerCount;
             pawnBases = new TokenBase[playerCount];
 
             // Instantiate PawnBase prefabs at the sorted positions
@@ -42,10 +37,6 @@ namespace Placements.Runtime
                 pawnBases[i] = pawnBase;
             }
         }
-
-        public void MovePawn()
-        {
-            
-        }
+        
     }
 }
