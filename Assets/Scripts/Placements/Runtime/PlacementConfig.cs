@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Placements.Runtime
 {
     [Serializable]
-    public struct PlacementConfig
+    public struct PlacementConfig 
     {
         public float radius;
         public float startAngle;

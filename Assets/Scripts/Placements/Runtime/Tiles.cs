@@ -45,32 +45,6 @@ namespace Placements.Runtime
 
             tiles = totalTiles.ToArray();
         }
-        
-        /// <summary>
-        /// This now correctly uses the pre-built arrays from your Tiles/ColorTiles components.
-        /// </summary>
-        public Vector3 GetTileBoardPosition(sbyte boardPos, int playerIndex)
-        {
-            // Case 1: Token is on the HOME STRETCH (encoded as 100+)
-            if (boardPos >= 100)
-            {
-                int homeStretchStep = (boardPos - 100) % 6;
-                if (playerIndex < groupedTiles.Length)
-                {
-                    var finalTiles = groupedTiles[playerIndex].tileFinal;
-                    if (homeStretchStep < finalTiles.Length)
-                    {
-                        return finalTiles[homeStretchStep].transform.position;
-                    }
-                }
-            }
-            else if (boardPos >= 0 && boardPos < tiles.Length)
-            {
-                return tiles[boardPos];
-            }
-        
-            return Vector3.zero;
-        }
 
 
 #if UNITY_EDITOR
@@ -90,5 +64,11 @@ namespace Placements.Runtime
             }
         }
 #endif
+        public Vector3 GetMainTilePosition(int absPosition)
+        {
+            int index = absPosition - 1;
+            if (index < 0 || index >= tiles.Length) return Vector3.zero;
+            return tiles[index];
+        }
     }
 }

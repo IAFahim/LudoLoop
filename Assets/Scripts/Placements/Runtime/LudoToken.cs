@@ -4,7 +4,7 @@ using UnityEngine.Events;
 
 namespace Placements.Runtime
 {
-    public class Token : MonoBehaviour
+    public class LudoToken : MonoBehaviour
     {
         public int tokenIndex;
         public Renderer selfRenderer;

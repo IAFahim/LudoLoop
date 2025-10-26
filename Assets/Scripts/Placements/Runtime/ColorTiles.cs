@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,8 +22,7 @@ namespace Placements.Runtime
                 }
             }
         }
-        
-        
+
         public IEnumerable<GameObject> EndTiles
         {
             get
@@ -33,19 +31,8 @@ namespace Placements.Runtime
                 {
                     yield return tile;
                 }
-                
+
                 foreach (var tile in tileBottom)
-                {
-                    yield return tile;
-                }
-            }
-        }
-        
-        public IEnumerator<GameObject> FinalTiles
-        {
-            get
-            {
-                foreach (var tile in tileFinal)
                 {
                     yield return tile;
                 }

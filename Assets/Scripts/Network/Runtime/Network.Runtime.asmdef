@@ -1,7 +1,6 @@
 {
     "name": "Network.Runtime",
     "references": [
-        "LudoGame.Runtime",
         "endel.nativewebsocket"
     ],
     "includePlatforms": [],
