@@ -11,9 +11,9 @@ namespace Ludo
         private const byte BasePosition = 0;
         private const byte StartPosition = 1;
         private const byte TotalMainTrackTiles = 52;          // 1..52
-        private const byte HomeStretchStartPosition = 53;     // 53..58
-        public  const byte StepsToHome = 6;
-        private const byte HomePosition = HomeStretchStartPosition + StepsToHome; // 59
+        private const byte HomeStretchStartPosition = 52;     // 52
+        public  const byte StepsToHome = 5;
+        private const byte HomePosition = HomeStretchStartPosition + StepsToHome; // 57
         private const byte ExitFromBaseAtRoll = 6;
         private const byte TokensPerPlayer = 4;
         private const byte PlayerTrackOffset = TotalMainTrackTiles / 4; // 13

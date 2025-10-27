@@ -9,6 +9,7 @@ namespace Ludo
         public LudoBoard board;
         public int currentPlayerIndex;
         public byte diceValue;
+        
 
         [ContextMenu("ReSetup")]
         [Button]

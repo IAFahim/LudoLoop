@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: LudoGame.Runtime::Ludo.GameState
   gameType: Local 4
   board:
-    playerCount: 4
-    tokenPositions: 00000000050000000000000000000000
+    playerCount: 2
+    tokenPositions: 3900000001000000
   currentPlayerIndex: 0
   diceValue: 0

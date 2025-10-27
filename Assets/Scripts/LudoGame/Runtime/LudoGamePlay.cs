@@ -1,16 +1,19 @@
+using System;
 using System.Collections.Generic;
 using EasyButtons;
 using Ludo;
 using Placements.Runtime;
 using UnityEngine;
 
+[ExecuteAlways]
 public class LudoGamePlay : MonoBehaviour, ILudoBoard
 {
+    
     [Header("Game Setup")] public GameSession gameSession;
     [SerializeField] private PlayerSpawner playerSpawner;
     [SerializeField] private Tiles tileSystem;
 
-    private void OnEnable()
+    private void Start()
     {
         if (gameSession == null) return;
         playerSpawner.CreateBaseForPlayerCount(PlayerCount);
@@ -22,9 +25,15 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         RefreshState();
     }
 
+    private void Update()
+    {
+        RefreshState();
+    }
+
     [Button]
     public void RefreshState()
     {
+        Debug.Log("WIF");
         for (int playerIndex = 0; playerIndex < gameSession.board.PlayerCount; playerIndex++)
         {
             for (int tokenOrdinal = 0; tokenOrdinal < LudoBoard.Tokens; tokenOrdinal++)
@@ -35,7 +44,7 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
 
                 if (gameSession.board.IsAtBase(tokenIndex))
                 {
-                    worldPos = GetBasePosition(playerIndex, tokenOrdinal);
+                    worldPos = GetBasePosition(playerIndex);
                 }
                 else if (gameSession.board.IsHome(tokenIndex))
                 {
@@ -48,33 +57,46 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
                 }
                 else // main track
                 {
-                    int abs = gameSession.board.GetAbsolutePosition(tokenIndex);
-                    if (abs is >= 1 and <= 52)
+                    if (logicalPos is >= 1 and <= 52)
                     {
-                        worldPos = GetHomeStretchPosition(abs);
+                        int abs = gameSession.board.GetAbsolutePosition(tokenIndex);
+                        worldPos = GetAbsoluteBoardPosition(abs);
                     }
-                    else continue;
+                    else
+                    {
+                        worldPos = Vector3.zero;
+                    }
                 }
 
+                Debug.DrawLine(worldPos, worldPos + Vector3.up * 5, Color.black, 1);
+                Debug.Log(worldPos.ToString());
                 MoveTokenToPosition(playerIndex, tokenOrdinal, worldPos);
             }
         }
     }
 
-
-    public Vector3 GetBasePosition(int playerIndex, int tokenOrdinal)
+    public int OffsetPlayerIndex(int playerIndex)
     {
-        return Vector3.zero;
+        if (PlayerCount == 2 && playerIndex == 1) return 2;
+        return playerIndex;
     }
 
-    public Vector3 GetHomeStretchPosition(int absPosition)
+    public Vector3 GetBasePosition(int playerIndex)
     {
-        return Vector3.zero;
+        var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
+        return playerSpawner.pawnBasePositions[offsetPlayerIndex];
     }
+    
 
     public Vector3 GetHomeStretchPosition(int playerIndex, int step)
     {
-        return Vector3.zero;
+        var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
+        return tileSystem.groupedTiles[offsetPlayerIndex].tileFinal[step].transform.position;
+    }
+    
+    public Vector3 GetAbsoluteBoardPosition(int abs)
+    {
+        return tileSystem.tiles[abs-1];
     }
 
     public Vector3 GetHomePosition(int playerIndex, int tokenOrdinal)
@@ -89,12 +111,10 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
 
     public void HighlightToken(int playerIndex, int tokenOrdinal, bool highlight)
     {
-        
     }
 
     public void MoveTokenToPosition(int playerIndex, int tokenOrdinal, Vector3 position)
     {
-       
     }
 
     public void RestartGame()
