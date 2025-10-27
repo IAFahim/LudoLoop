@@ -1,18 +1,18 @@
 using System.Collections.Generic;
+using EasyButtons;
 using Ludo;
 using Placements.Runtime;
 using UnityEngine;
 
 public class LudoGamePlay : MonoBehaviour, ILudoBoard
 {
-    [Header("Game Setup")] public GameState gameState;
+    [Header("Game Setup")] public GameSession gameSession;
     [SerializeField] private PlayerSpawner playerSpawner;
     [SerializeField] private Tiles tileSystem;
-    [SerializeField] private GroupedTiles[] playerColorTiles; // Per player home stretches
 
     private void OnEnable()
     {
-        if (gameState == null) return;
+        if (gameSession == null) return;
         playerSpawner.CreateBaseForPlayerCount(PlayerCount);
         RefreshState();
     }
@@ -22,40 +22,41 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         RefreshState();
     }
 
+    [Button]
     public void RefreshState()
     {
-        for (int p = 0; p < gameState.board.PlayerCount; p++)
+        for (int playerIndex = 0; playerIndex < gameSession.board.PlayerCount; playerIndex++)
         {
-            for (int o = 0; o < LudoBoard.Tokens; o++)
+            for (int tokenOrdinal = 0; tokenOrdinal < LudoBoard.Tokens; tokenOrdinal++)
             {
-                int t = gameState.board.TokenIndex(p, o);
-                byte logicalPos = gameState.board.TokenPositions[t];
+                int tokenIndex = gameSession.board.TokenIndex(playerIndex, tokenOrdinal);
+                byte logicalPos = gameSession.board.TokenPositions[tokenIndex];
                 Vector3 worldPos;
 
-                if (gameState.board.IsAtBase(t))
+                if (gameSession.board.IsAtBase(tokenIndex))
                 {
-                    worldPos = GetBasePosition(p, o);
+                    worldPos = GetBasePosition(playerIndex, tokenOrdinal);
                 }
-                else if (gameState.board.IsHome(t))
+                else if (gameSession.board.IsHome(tokenIndex))
                 {
-                    worldPos = GetHomePosition(p, o);
+                    worldPos = GetHomePosition(playerIndex, tokenOrdinal);
                 }
-                else if (gameState.board.IsOnHomeStretch(t))
+                else if (gameSession.board.IsOnHomeStretch(tokenIndex))
                 {
                     int step = logicalPos - LudoBoard.HomeStart;
-                    worldPos = GetHomeStretchPosition(p, step);
+                    worldPos = GetHomeStretchPosition(playerIndex, step);
                 }
                 else // main track
                 {
-                    int abs = gameState.board.GetAbsolutePosition(t);
-                    if (abs >= 1 && abs <= 52)
+                    int abs = gameSession.board.GetAbsolutePosition(tokenIndex);
+                    if (abs is >= 1 and <= 52)
                     {
-                        worldPos = GetMainTrackPosition(abs);
+                        worldPos = GetHomeStretchPosition(abs);
                     }
                     else continue;
                 }
 
-                MoveTokenToPosition(p, o, worldPos);
+                MoveTokenToPosition(playerIndex, tokenOrdinal, worldPos);
             }
         }
     }
@@ -66,7 +67,7 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         return Vector3.zero;
     }
 
-    public Vector3 GetMainTrackPosition(int absPosition)
+    public Vector3 GetHomeStretchPosition(int absPosition)
     {
         return Vector3.zero;
     }
@@ -105,64 +106,64 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
 
     #region ILudoBoard Implementation
 
-    public byte[] TokenPositions => gameState.board.TokenPositions;
+    public byte[] TokenPositions => gameSession.board.TokenPositions;
 
-    public int PlayerCount => gameState.board.PlayerCount;
+    public int PlayerCount => gameSession.board.PlayerCount;
 
-    public bool IsAtBase(int t) => gameState.board.IsAtBase(t);
+    public bool IsAtBase(int t) => gameSession.board.IsAtBase(t);
 
-    public bool IsOnMainTrack(int t) => gameState.board.IsOnMainTrack(t);
+    public bool IsOnMainTrack(int t) => gameSession.board.IsOnMainTrack(t);
 
-    public bool IsOnHomeStretch(int t) => gameState.board.IsOnHomeStretch(t);
+    public bool IsOnHomeStretch(int t) => gameSession.board.IsOnHomeStretch(t);
 
-    public bool IsHome(int t) => gameState.board.IsHome(t);
+    public bool IsHome(int t) => gameSession.board.IsHome(t);
 
-    public bool IsOnSafeTile(int t) => gameState.board.IsOnSafeTile(t);
+    public bool IsOnSafeTile(int t) => gameSession.board.IsOnSafeTile(t);
 
-    public bool HasWon(int playerIndex) => gameState.board.HasWon(playerIndex);
+    public bool HasWon(int playerIndex) => gameSession.board.HasWon(playerIndex);
 
     public void MoveToken(int tokenIndex, int steps)
     {
-        gameState.board.MoveToken(tokenIndex, steps);
+        gameSession.board.MoveToken(tokenIndex, steps);
         RefreshState();
     }
 
     public void GetOutOfBase(int tokenIndex)
     {
-        gameState.board.GetOutOfBase(tokenIndex);
+        gameSession.board.GetOutOfBase(tokenIndex);
         RefreshState();
     }
 
     public List<int> GetMovableTokens(int playerIndex, int diceRoll) =>
-        gameState.board.GetMovableTokens(playerIndex, diceRoll);
+        gameSession.board.GetMovableTokens(playerIndex, diceRoll);
 
-    public int GetAbsolutePosition(int tokenIndex) => gameState.board.GetAbsolutePosition(tokenIndex);
+    public int GetAbsolutePosition(int tokenIndex) => gameSession.board.GetAbsolutePosition(tokenIndex);
 
     public int ToAbsoluteMainTrack(byte relativeMainTrackTile, int playerIndex) =>
-        gameState.board.ToAbsoluteMainTrack(relativeMainTrackTile, playerIndex);
+        gameSession.board.ToAbsoluteMainTrack(relativeMainTrackTile, playerIndex);
 
-    public int StartAbsoluteTile(int playerIndex) => gameState.board.StartAbsoluteTile(playerIndex);
+    public int StartAbsoluteTile(int playerIndex) => gameSession.board.StartAbsoluteTile(playerIndex);
 
-    public int TokenIndex(int playerIndex, int tokenOrdinal) => gameState.board.TokenIndex(playerIndex, tokenOrdinal);
+    public int TokenIndex(int playerIndex, int tokenOrdinal) => gameSession.board.TokenIndex(playerIndex, tokenOrdinal);
 
     public byte RelativeForAbsolute(int playerIndex, int absoluteTile) =>
-        gameState.board.RelativeForAbsolute(playerIndex, absoluteTile);
+        gameSession.board.RelativeForAbsolute(playerIndex, absoluteTile);
 
     public void DebugSetTokenAtRelative(int playerIndex, int tokenOrdinal, int relative)
     {
-        gameState.board.DebugSetTokenAtRelative(playerIndex, tokenOrdinal, relative);
+        gameSession.board.DebugSetTokenAtRelative(playerIndex, tokenOrdinal, relative);
         RefreshState();
     }
 
     public void DebugSetTokenAtAbsolute(int playerIndex, int tokenOrdinal, int absoluteTile)
     {
-        gameState.board.DebugSetTokenAtAbsolute(playerIndex, tokenOrdinal, absoluteTile);
+        gameSession.board.DebugSetTokenAtAbsolute(playerIndex, tokenOrdinal, absoluteTile);
         RefreshState();
     }
 
     public void DebugMakeBlockadeAtAbsolute(int ownerPlayerIndex, int absoluteTile)
     {
-        gameState.board.DebugMakeBlockadeAtAbsolute(ownerPlayerIndex, absoluteTile);
+        gameSession.board.DebugMakeBlockadeAtAbsolute(ownerPlayerIndex, absoluteTile);
         RefreshState();
     }
 

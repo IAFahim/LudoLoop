@@ -30,7 +30,7 @@ namespace Ludo
 
         [SerializeField] private int playerCount;
         [SerializeField] private byte[] tokenPositions;
-
+        
         public LudoBoard(int numberOfPlayers)
         {
             playerCount = numberOfPlayers;

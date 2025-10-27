@@ -52,10 +52,15 @@ namespace Placements.Runtime
         {
             if (tiles == null) return;
 
-            GUIStyle style = new GUIStyle();
-            style.normal.textColor = Color.white;
-            style.fontSize = 12;
-            style.alignment = TextAnchor.MiddleCenter;
+            GUIStyle style = new GUIStyle
+            {
+                normal =
+                {
+                    textColor = Color.white
+                },
+                fontSize = 12,
+                alignment = TextAnchor.MiddleCenter
+            };
 
             Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             for (int i = 0; i < tiles.Length; i++)

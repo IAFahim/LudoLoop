@@ -470,7 +470,7 @@ namespace Network.Runtime
         public int consecutiveSixes;
         public int currentPlayer;
         public int playerCount;
-        public int[] tokenPositions;
+        public byte[] tokenPositions;
     }
 
     [Serializable]
@@ -479,7 +479,7 @@ namespace Network.Runtime
         public string playerId;
         public int playerIndex;
         public int diceValue;
-        public int[] validMoves;
+        public byte[] validMoves;
         public bool noValidMoves;
     }
 
@@ -583,7 +583,7 @@ namespace Network.Runtime
     {
         public int playerIndex;
         public int diceValue;
-        public int[] validMoves;
+        public byte[] validMoves;
         public bool noValidMoves;
     }
 
