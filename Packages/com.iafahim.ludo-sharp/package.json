@@ -1,0 +1,38 @@
+{
+  "name": "com.iafahim.ludo-sharp",
+  "displayName": "Omiya Games - Template Unity Package",
+  "version": "1.0.0-pre.1",
+  "unity": "2021.2",
+  "unityRelease": "11f1",
+  "description": "This is a template package, used as a basis to build a bigger one.",
+  "category": "Tool",
+  "type": "tool",
+  "license": "MIT",
+  "author": {
+    "name": "Md. Ishtiaq Ahamed Fahim",
+    "email": "iafahim.dev@gmail.com",
+    "url": "https://github.com/IAFahim"
+  },
+  "dependencies": {
+    "com.unity.ext.nunit": "1.0.0"
+  },
+  "keywords": [
+    "IAFahim",
+    "Scripts",
+    "Template",
+    "Tool"
+  ],
+  "samples": [
+    {
+      "displayName": "Example 1",
+      "description": "This sample is just an example",
+      "path": "Samples~/Example1"
+    }
+  ],
+  "_fingerprint": "8b97bb15161dfdce9f8bee70032df3c28cd61ebe",
+  "repository": {
+    "url": "https://github.com/IAFahim/LudoLoop.git",
+    "type": "git",
+    "revision": "e3f5fc1424febc0bc1aced1c6cb9623b696dd63c"
+  }
+}
