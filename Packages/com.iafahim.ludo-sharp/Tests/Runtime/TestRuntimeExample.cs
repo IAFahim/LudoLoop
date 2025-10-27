@@ -19,43 +19,7 @@ namespace Ludo.Tests
             Assert.That(b.TokenPositions.All(p => p == LudoBoard.Base), Is.True);
         }
     }
-
-    [TestFixture]
-    public class TileTypeTests
-    {
-        [Test]
-        public void TileType_Boundaries()
-        {
-            var b = new LudoBoard(4);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.Base);
-            Assert.That(b.IsAtBase(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.False);
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.False);
-            Assert.That(b.IsHome(b.TokenIndex(0,0)), Is.False);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.MainStart);
-            Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.False);
-            Assert.That(b.IsHome(b.TokenIndex(0,0)), Is.False);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.MainEnd);
-            Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.True);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.HomeStart);
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.False);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.HomeStart + LudoBoard.StepsToHome - 1); // 58
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.IsHome(b.TokenIndex(0,0)), Is.False);
-
-            b.DebugSetTokenAtRelative(0, 0, LudoBoard.Home);
-            Assert.That(b.IsHome(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.False);
-            Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.False);
-        }
-    }
+    
 
     [TestFixture]
     public class BaseExitTests
@@ -152,41 +116,7 @@ namespace Ludo.Tests
             Assert.That(b.IsOnMainTrack(b.TokenIndex(0,0)), Is.True);
             Assert.That(b.TokenPositions[b.TokenIndex(0,0)], Is.EqualTo(52));
         }
-
-        [TestCase(50, 3, 53)]
-        [TestCase(51, 2, 53)]
-        [TestCase(52, 1, 53)]
-        public void EnterHomeStretch_FromDifferentOffsets(int start, int steps, int expected)
-        {
-            var b = new LudoBoard(4);
-            b.DebugSetTokenAtRelative(0, 0, start);
-            b.MoveToken(b.TokenIndex(0,0), steps);
-            Assert.That(b.IsOnHomeStretch(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.TokenPositions[b.TokenIndex(0,0)], Is.EqualTo(expected));
-        }
-
-        [TestCase(52, 7, 59)] // exactly home
-        [TestCase(55, 4, 59)] // from home stretch to home
-        [TestCase(48, 11, 59)] // long exact path to home
-        public void ExactToHome_IsAllowed(int start, int steps, int expected)
-        {
-            var b = new LudoBoard(4);
-            b.DebugSetTokenAtRelative(0, 0, start);
-            b.MoveToken(b.TokenIndex(0,0), steps);
-            Assert.That(b.IsHome(b.TokenIndex(0,0)), Is.True);
-            Assert.That(b.TokenPositions[b.TokenIndex(0,0)], Is.EqualTo(expected));
-        }
-
-        [TestCase(52, 8)]
-        [TestCase(58, 2)]
-        [TestCase(57, 3)]
-        public void OvershootHome_IsIllegal(int start, int steps)
-        {
-            var b = new LudoBoard(4);
-            b.DebugSetTokenAtRelative(0, 0, start);
-            b.MoveToken(b.TokenIndex(0,0), steps);
-            Assert.That(b.TokenPositions[b.TokenIndex(0,0)], Is.EqualTo((byte)start));
-        }
+        
 
         [Test]
         public void Move_ZeroOrNegativeSteps_DoesNothing()

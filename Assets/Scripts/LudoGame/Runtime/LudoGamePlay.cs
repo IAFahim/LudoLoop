@@ -8,7 +8,6 @@ using UnityEngine;
 [ExecuteAlways]
 public class LudoGamePlay : MonoBehaviour, ILudoBoard
 {
-    
     [Header("Game Setup")] public GameSession gameSession;
     [SerializeField] private PlayerSpawner playerSpawner;
     [SerializeField] private Tiles tileSystem;
@@ -21,11 +20,6 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
     }
 
     private void OnValidate()
-    {
-        RefreshState();
-    }
-
-    private void Update()
     {
         RefreshState();
     }
@@ -86,25 +80,37 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
         return playerSpawner.pawnBasePositions[offsetPlayerIndex];
     }
-    
 
     public Vector3 GetHomeStretchPosition(int playerIndex, int step)
     {
         var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
         return tileSystem.groupedTiles[offsetPlayerIndex].tileFinal[step].transform.position;
     }
-    
+
     public Vector3 GetAbsoluteBoardPosition(int abs)
     {
-        return tileSystem.tiles[abs-1];
+        return tileSystem.tiles[abs - 1];
     }
+
+    [Button]
+    public void Predict(int playerIndex, byte dice)
+    {
+        var movableTokens = gameSession.board.GetMovableTokens(playerIndex, dice);
+        foreach (var token in movableTokens)
+        {
+            Debug.Log(token);
+        }
+    }
+
+
+    [Button]
+    public void Play(int tokenIndex, int steps)
+    {
+        gameSession.board.MoveToken(tokenIndex, steps);
+    }
+    
 
     public Vector3 GetHomePosition(int playerIndex, int tokenOrdinal)
-    {
-        return Vector3.zero;
-    }
-
-    public Vector3 GetTokenTransform(int playerIndex, int tokenOrdinal)
     {
         return Vector3.zero;
     }

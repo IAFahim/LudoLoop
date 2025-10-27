@@ -157,6 +157,7 @@ MonoBehaviour:
   pawnBases:
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &27482695
 Transform:
   m_ObjectHideFlags: 0
