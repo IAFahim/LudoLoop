@@ -7,7 +7,7 @@ namespace Placements.Runtime
     {
         public Vector3[] tiles;
         public float heightOffset;
-        public ColorTiles[] groupedTiles;
+        public GroupedTiles[] groupedTiles;
 
         private void OnValidate()
         {

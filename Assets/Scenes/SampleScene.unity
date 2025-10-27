@@ -149,13 +149,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PlayerSpawner
   tokenBasePrefab: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
-  homeBasePrefab: {fileID: 0}
   pawnBasePositions:
   - {x: -6.2, y: -0.12, z: -6.2}
   - {x: -6.2, y: -0.12, z: 6.2}
   - {x: 6.2, y: -0.12, z: 6.2}
   - {x: 6.2, y: -0.12, z: -6.2}
-  homeBasePositions: []
+  pawnBases:
+  - {fileID: 409173422}
+  - {fileID: 1726516971}
+  - {fileID: 796341748}
+  - {fileID: 694231233}
 --- !u!4 &27482695
 Transform:
   m_ObjectHideFlags: 0
@@ -902,7 +905,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_Name
-      value: Bed
+      value: Base.1
       objectReference: {fileID: 0}
     - target: {fileID: 6108104132278460849, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1301,6 +1304,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5801045125850826267, guid: e3cf57cc7cc2143a0ae511d76148b257, type: 3}
   m_PrefabInstance: {fileID: 395523559}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &409173422 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 256134012}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!1001 &449481815
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1311,7 +1325,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_Name
-      value: Bed.1
+      value: Base.2
       objectReference: {fileID: 0}
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_IsActive
@@ -1881,6 +1895,17 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!114 &694231233 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 1575640996}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!43 &723183734
 Mesh:
   m_ObjectHideFlags: 0
@@ -2514,6 +2539,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6376408578295583841, guid: 1badabdd7fd884c5ea42311acd026f94, type: 3}
   m_PrefabInstance: {fileID: 7762150830932216875}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &796341748 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 875822831}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -2841,7 +2877,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_Name
-      value: Bed.2
+      value: Base.3
       objectReference: {fileID: 0}
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_IsActive
@@ -3116,9 +3152,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 204acab3a96dc291ea9f60301a48b904, type: 3}
   m_Name: 
   m_EditorClassIdentifier: LudoGame.Runtime::Ludo.LudoGameManager
-  gameState: {fileID: 0}
-  playerSpawner: {fileID: 0}
-  tileSystem: {fileID: 0}
+  gameState: {fileID: 11400000, guid: e0873dd7fe824c35d9bb1c318cbc2705, type: 2}
+  playerSpawner: {fileID: 27482694}
+  tileSystem: {fileID: 1743346533}
   playerColorTiles: []
 --- !u!4 &998515157
 Transform:
@@ -4052,7 +4088,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_Name
-      value: Bed.3
+      value: Base.4
       objectReference: {fileID: 0}
     - target: {fileID: 270154531169724057, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
       propertyPath: m_IsActive
@@ -4482,6 +4518,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 506190968634112069, guid: 6d4eb955f027e4138b8353bf55297ba1, type: 3}
   m_PrefabInstance: {fileID: 1632456750}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1726516971 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2303272584833979541, guid: d6011cf02f56e4e7c9c934748e171caf, type: 3}
+  m_PrefabInstance: {fileID: 449481815}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ced6caaeb9c4c6ab8560a6714c99f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Placements.Runtime::Placements.Runtime.PawnPlacement
 --- !u!1 &1743346531
 GameObject:
   m_ObjectHideFlags: 0

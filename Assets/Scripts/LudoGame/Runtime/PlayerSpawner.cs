@@ -1,42 +1,42 @@
 using System.Linq;
-using Ludo;
 using UnityEngine;
 
-public class PlayerSpawner : MonoBehaviour
+namespace Placements.Runtime
 {
-    [SerializeField] private TokenBase tokenBasePrefab;
-    [SerializeField] private HomeBase homeBasePrefab;
-    [SerializeField] private Vector3[] pawnBasePositions;
-    [SerializeField] private Vector3[] homeBasePositions;
-    public TokenBase[] pawnBases { get; private set; }
-    public HomeBase[] homes { get; private set; }
-
-    private void OnValidate()
+    public class PlayerSpawner : MonoBehaviour
     {
-        // Find all TokenBase objects in the scene
-        var allTokenBases = FindObjectsByType<TokenBase>(FindObjectsInactive.Include, FindObjectsSortMode.None).OrderBy(pb => pb.name).ToArray();
-        pawnBasePositions = allTokenBases.Select(pb => pb.transform.position).ToArray();
+        public TokenBase tokenBasePrefab;
+        public Vector3[] pawnBasePositions;
+        public TokenBase[] pawnBases;
 
-        // Find all HomeBase objects
-        var allHomeBases = FindObjectsByType<HomeBase>(FindObjectsInactive.Include, FindObjectsSortMode.None).OrderBy(hb => hb.name).ToArray();
-        homeBasePositions = allHomeBases.Select(hb => hb.transform.position).ToArray();
-    }
-
-    public void SetupPlayers(int playerCount)
-    {
-        pawnBases = new TokenBase[playerCount];
-        homes = new HomeBase[playerCount];
-
-        for (int i = 0; i < playerCount; i++)
+        private void OnValidate()
         {
-            var pawnBase = Instantiate(tokenBasePrefab, pawnBasePositions[i % pawnBasePositions.Length], Quaternion.identity);
-            pawnBase.name = $"TokenBase_{i}";
-            pawnBase.Place(i);
-            pawnBases[i] = pawnBase;
+            // Find all PawnBase objects in the scene, including inactive ones
+            pawnBases = FindObjectsByType<TokenBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
-            var home = Instantiate(homeBasePrefab, homeBasePositions[i % homeBasePositions.Length], Quaternion.identity);
-            home.name = $"HomeBase_{i}";
-            homes[i] = home;
+            // Sort by name
+            var sortedPawnBases = pawnBases.OrderBy(pb => pb.name).ToArray();
+
+            // Assign positions from sorted PawnBases to pawnBasePositions
+            pawnBasePositions = new Vector3[sortedPawnBases.Length];
+            for (int i = 0; i < sortedPawnBases.Length; i++)
+            {
+                pawnBasePositions[i] = sortedPawnBases[i].transform.position;
+            }
         }
+
+        public void CreateBaseForPlayerCount(int playerCount)
+        {
+            pawnBases = new TokenBase[playerCount];
+
+            // Instantiate PawnBase prefabs at the sorted positions
+            for (int i = 0; i < playerCount; i++)
+            {
+                var pawnBase = Instantiate(tokenBasePrefab, pawnBasePositions[i], Quaternion.identity);
+                pawnBase.Place(i);
+                pawnBases[i] = pawnBase;
+            }
+        }
+        
     }
 }

@@ -7,7 +7,6 @@ public class TokenBase : MonoBehaviour
     private TokenData tokenData;
 
     [SerializeField] private PlacementConfig config = PlacementConfig.Default();
-
     [SerializeField] private LudoToken[] tokens;
     [SerializeField] private Vector3[] tokenBasePositions;
 
@@ -28,12 +27,6 @@ public class TokenBase : MonoBehaviour
         }
 
         return tokens;
-    }
-
-    public void MoveTokenToBase(int index)
-    {
-        if (tokens == null || index < 0 || index >= tokens.Length) return;
-        tokens[index].transform.position = tokenBasePositions[index];
     }
 
     private void OnDrawGizmos()

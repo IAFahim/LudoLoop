@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Placements.Runtime
 {
-    public class ColorTiles : MonoBehaviour
+    public class GroupedTiles : MonoBehaviour
     {
         public GameObject tileSafe;
         public GameObject[] tileStart;
