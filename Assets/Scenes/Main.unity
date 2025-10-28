@@ -155,9 +155,9 @@ MonoBehaviour:
   - {x: 6.2, y: -0.12, z: 6.2}
   - {x: 6.2, y: -0.12, z: -6.2}
   pawnBases:
-  - {fileID: 1575640997}
   - {fileID: 256134013}
   - {fileID: 449481816}
+  - {fileID: 1575640997}
   - {fileID: 875822832}
 --- !u!4 &27482695
 Transform:
@@ -2300,7 +2300,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 204acab3a96dc291ea9f60301a48b904, type: 3}
   m_Name: 
   m_EditorClassIdentifier: LudoGame.Runtime::Ludo.LudoGameManager
-  gameSession: {fileID: 11400000, guid: e0873dd7fe824c35d9bb1c318cbc2705, type: 2}
+  gameSession: {fileID: 11400000, guid: 478867f89d88c440ca571d28dbde4576, type: 2}
   playerSpawner: {fileID: 27482694}
   tileSystem: {fileID: 1743346533}
 --- !u!4 &998515157
