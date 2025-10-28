@@ -15,6 +15,13 @@ MonoBehaviour:
   gameType: Local 2
   board:
     playerCount: 2
-    tokenPositions: 000000000000000000000000
+    tokenPositions: 0500000025000000
   currentPlayerIndex: 0
-  diceValue: 0
+  diceValue: 1
+  consecutiveSixCount: 3
+  othersCanInteractWithBoard: 0
+  mainPlayerIndex: 0
+  currentMoveableTokens: 04050607
+  tokenToMove: 7
+  tokenNewPosition: 0
+  tokenSentToBase: 255

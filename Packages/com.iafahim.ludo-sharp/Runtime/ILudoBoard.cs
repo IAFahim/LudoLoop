@@ -28,9 +28,9 @@ namespace Ludo
         bool HasWon(int playerIndex);
 
         // Actions
-        void MoveToken(int tokenIndex, int steps);
+        void MoveToken(int tokenIndex, int steps, out byte tokenSentToBase);
         void GetOutOfBase(int tokenIndex);
-        List<int> GetMovableTokens(int playerIndex, int diceRoll);
+        List<byte> GetMovableTokens(int playerIndex, int diceRoll);
 
         // Mapping utilities
         int GetAbsolutePosition(int tokenIndex);

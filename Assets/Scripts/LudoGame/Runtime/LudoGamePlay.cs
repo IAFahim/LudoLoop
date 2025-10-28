@@ -1,16 +1,15 @@
-using System;
 using System.Collections.Generic;
 using EasyButtons;
 using Ludo;
 using Placements.Runtime;
 using UnityEngine;
 
-[ExecuteAlways]
 public class LudoGamePlay : MonoBehaviour, ILudoBoard
 {
     [Header("Game Setup")] public GameSession gameSession;
     [SerializeField] private PlayerSpawner playerSpawner;
     [SerializeField] private Tiles tileSystem;
+    
 
     private void Start()
     {
@@ -27,7 +26,6 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
     [Button]
     public void RefreshState()
     {
-        Debug.Log("WIF");
         for (int playerIndex = 0; playerIndex < gameSession.board.PlayerCount; playerIndex++)
         {
             for (int tokenOrdinal = 0; tokenOrdinal < LudoBoard.Tokens; tokenOrdinal++)
@@ -63,7 +61,6 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
                 }
 
                 Debug.DrawLine(worldPos, worldPos + Vector3.up * 5, Color.black, 1);
-                Debug.Log(worldPos.ToString());
                 MoveTokenToPosition(playerIndex, tokenOrdinal, worldPos);
             }
         }
@@ -87,10 +84,7 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         return tileSystem.groupedTiles[offsetPlayerIndex].tileFinal[step].transform.position;
     }
 
-    public Vector3 GetAbsoluteBoardPosition(int abs)
-    {
-        return tileSystem.tiles[abs - 1];
-    }
+    public Vector3 GetAbsoluteBoardPosition(int abs) => tileSystem.tiles[abs - 1];
 
     [Button]
     public void Predict(int playerIndex, byte dice)
@@ -106,7 +100,7 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
     [Button]
     public void Play(int tokenIndex, int steps)
     {
-        gameSession.board.MoveToken(tokenIndex, steps);
+        gameSession.board.MoveToken(tokenIndex, steps, out var tokenSentToBase);
     }
     
 
@@ -148,9 +142,9 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
 
     public bool HasWon(int playerIndex) => gameSession.board.HasWon(playerIndex);
 
-    public void MoveToken(int tokenIndex, int steps)
+    public void MoveToken(int tokenIndex, int steps, out byte tokenSentToBase)
     {
-        gameSession.board.MoveToken(tokenIndex, steps);
+        gameSession.board.MoveToken(tokenIndex, steps, out tokenSentToBase);
         RefreshState();
     }
 
@@ -160,8 +154,7 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         RefreshState();
     }
 
-    public List<int> GetMovableTokens(int playerIndex, int diceRoll) =>
-        gameSession.board.GetMovableTokens(playerIndex, diceRoll);
+    public List<byte> GetMovableTokens(int playerIndex, int diceRoll) => gameSession.board.GetMovableTokens(playerIndex, diceRoll);
 
     public int GetAbsolutePosition(int tokenIndex) => gameSession.board.GetAbsolutePosition(tokenIndex);
 

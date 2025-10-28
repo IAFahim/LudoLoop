@@ -17,6 +17,7 @@ namespace Ludo
         private const byte ExitFromBaseAtRoll = 6;
         private const byte TokensPerPlayer = 4;
         private const byte PlayerTrackOffset = TotalMainTrackTiles / 4; // 13
+        private const byte NoTokenSentToBaseCode = byte.MaxValue;
 
         public const byte Base = BasePosition;
         public const byte MainStart = StartPosition;
@@ -25,6 +26,7 @@ namespace Ludo
         public const byte Home = HomePosition;
         public const byte ExitRoll = ExitFromBaseAtRoll;
         public const byte Tokens = TokensPerPlayer;
+        
 
         public static readonly byte[] SafeAbsoluteTiles = {1, 14, 27, 40};
 
@@ -63,69 +65,19 @@ namespace Ludo
                 if (!IsHome(start + i)) return false;
             return true;
         }
-
-        /// PlantUML: MoveToken
-        /// ```plantuml
-        /// @startuml
-        /// start
-        /// :ValidateTokenIndex;
-        /// if (steps <= 0 or IsHome?) then (yes)
-        ///   :Return (noop);
-        ///   stop
-        /// endif
-        /// :TryGetNewPosition(tokenIndex, steps, out pos);
-        /// if (success?) then (no)
-        ///   :Return (illegal -> noop);
-        ///   stop
-        /// else (yes)
-        ///   :TokenPositions[tokenIndex] = pos;
-        ///   if (IsOnMainTrack AND !IsOnSafeTile?) then (yes)
-        ///     :CaptureTokensAt(tokenIndex);
-        ///   endif
-        ///   stop
-        /// endif
-        /// @enduml
-        /// ```
-        public void MoveToken(int tokenIndex, int steps)
+        
+        public void MoveToken(int tokenIndex, int steps, out byte tokenSentToBase)
         {
+            tokenSentToBase = NoTokenSentToBaseCode;
             ValidateTokenIndex(tokenIndex);
             if (steps <= 0 || IsHome(tokenIndex)) return;
 
-            if (!TryGetNewPosition(tokenIndex, steps, out byte newPos))
-                return;
+            if (!TryGetNewPosition(tokenIndex, steps, out byte newPos)) return;
 
             tokenPositions[tokenIndex] = newPos;
-            if (IsOnMainTrack(tokenIndex) && !IsOnSafeTile(tokenIndex))
-                CaptureTokensAt(tokenIndex);
+            if (IsOnMainTrack(tokenIndex) && !IsOnSafeTile(tokenIndex)) CaptureTokensAt(tokenIndex, out tokenSentToBase);
         }
-
-        /// PlantUML: TryGetNewPosition
-        /// ```plantuml
-        /// @startuml
-        /// start
-        /// if (IsHome?) then (yes) :fail; stop
-        /// if (IsAtBase?) then (yes)
-        ///   if (steps==6 AND start not blockaded?) then (yes)
-        ///     :new=1; success; stop
-        ///   else :fail; stop
-        ///   endif
-        /// endif
-        /// if (IsOnMainTrack?) then (yes)
-        ///   :check path for opponent blockade;
-        ///   if (blocked?) then (yes) :fail; stop
-        ///   if (current+steps <= 52?) then (yes) :new=current+steps; success; stop
-        ///   else :stepsIntoHome = current+steps-52;
-        ///        :target=53+stepsIntoHome-1 (<=59?);
-        ///        if (<=59?) then (yes) :new=target; success; else :fail;
-        ///   endif
-        /// endif
-        /// if (IsOnHomeStretch?) then (yes)
-        ///   if (current+steps <= 59?) then (yes) :new=current+steps; success; else :fail;
-        /// endif
-        /// :fail;
-        /// stop
-        /// @enduml
-        /// ```
+        
         private bool TryGetNewPosition(int tokenIndex, int steps, out byte newPos)
         {
             newPos = tokenPositions[tokenIndex];
@@ -143,17 +95,7 @@ namespace Ludo
             return false; // unknown state
         }
 
-        /// PlantUML: GetOutOfBase
-        /// ```plantuml
-        /// @startuml
-        /// start
-        /// :ValidateTokenIndex;
-        /// if (!IsAtBase) then (yes) :return; stop
-        /// :absStart=StartAbsoluteTile(player);
-        /// if (IsTileBlocked(absStart, player)?) then (yes) :return; else :Token=1;
-        /// stop
-        /// @enduml
-        /// ```
+        
         public void GetOutOfBase(int tokenIndex)
         {
             ValidateTokenIndex(tokenIndex);
@@ -164,27 +106,17 @@ namespace Ludo
             tokenPositions[tokenIndex] = StartPosition; // safe tile; no capture
         }
 
-        /// PlantUML: GetMovableTokens
-        /// ```plantuml
-        /// @startuml
-        /// start
-        /// if (dice in 1..6?) then (yes)
-        ///   :add tokens where TryGetNewPosition succeeds;
-        /// else :return empty;
-        /// endif
-        /// stop
-        /// @enduml
-        /// ```
-        public List<int> GetMovableTokens(int playerIndex, int diceRoll)
+        
+        public List<byte> GetMovableTokens(int playerIndex, int diceRoll)
         {
-            var list = new List<int>();
+            var list = new List<byte>();
             if (!IsDice(diceRoll)) return list;
 
             int start = playerIndex * TokensPerPlayer;
             for (int i = 0; i < TokensPerPlayer; i++)
             {
                 int t = start + i;
-                if (TryGetNewPosition(t, diceRoll, out _)) list.Add(t);
+                if (TryGetNewPosition(t, diceRoll, out _)) list.Add((byte)t);
             }
             return list;
         }
@@ -257,8 +189,9 @@ namespace Ludo
             }
         }
 
-        private void CaptureTokensAt(int movedTokenIndex)
+        private void CaptureTokensAt(int movedTokenIndex, out byte tokenSentToBase)
         {
+            tokenSentToBase = NoTokenSentToBaseCode;
             if (!IsOnMainTrack(movedTokenIndex)) return;
             if (IsOnSafeTile(movedTokenIndex)) return;
 
@@ -269,8 +202,10 @@ namespace Ludo
             {
                 if (PlayerOf(i) == p) continue;
                 if (!IsOnMainTrack(i)) continue;
-                if (GetAbsolutePosition(i) == newAbs)
-                    tokenPositions[i] = BasePosition; // send to base
+                if (GetAbsolutePosition(i) != newAbs) continue;
+                tokenSentToBase = (byte)i;
+                tokenPositions[i] = BasePosition;
+                return;
             }
         }
 
@@ -340,12 +275,12 @@ namespace Ludo
 
         // ===== Small helpers =====
         private int PlayerOf(int tokenIndex) => tokenIndex / TokensPerPlayer;
-        private bool IsDice(int n) => n >= 1 && n <= 6;
+        private bool IsDice(int n) => n is >= 1 and <= 6;
 
         private int GetPlayerTrackOffset(int playerIndex)
         {
-            if (playerCount == 2) return playerIndex * 2 * PlayerTrackOffset; // 0, 26
-            return playerIndex * PlayerTrackOffset;                            // 0, 13, 26, 39
+            if (playerCount == 2) return playerIndex * 2 * PlayerTrackOffset;
+            return playerIndex * PlayerTrackOffset;
         }
 
         private void ValidateTokenIndex(int tokenIndex)
