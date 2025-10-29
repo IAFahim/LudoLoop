@@ -12,4 +12,9 @@ public class LoadAdditiveSceneByName : MonoBehaviour
         SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
         eventBusString.Publish(sceneName);
     }
+
+    public void UnLoad()
+    {
+        SceneManager.UnloadSceneAsync(sceneName);
+    }
 }

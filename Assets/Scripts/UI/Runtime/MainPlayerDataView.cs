@@ -1,4 +1,5 @@
 using System;
+using Events;
 using TMPro;
 using UnityEngine;
 
@@ -8,11 +9,28 @@ namespace UI.Runtime
     {
         [SerializeField] private TMP_Text userName;
         [SerializeField] private TMP_Text coin;
+        [SerializeField] private EventBusString eventBusString;
 
         private void OnEnable()
         {
+            eventBusString.OnSelectionChanged += EventBusStringOnOnSelectionChanged;
+            SetUI();
+        }
+
+        private void OnDisable()
+        {
+            eventBusString.OnSelectionChanged -= EventBusStringOnOnSelectionChanged;
+        }
+
+        private void EventBusStringOnOnSelectionChanged(string _)
+        {
+            gameObject.SetActive(false);
+        }
+
+        private void SetUI()
+        {
             var currentUserName = DataManager.Instance.CurrentUser.name;
-            var instanceCoins = DataManager.Instance.CurrentUser.coins;
+            var instanceCoins = DataManager.Instance.Coins;
             SetUI(currentUserName, instanceCoins.ToString());
         }
 

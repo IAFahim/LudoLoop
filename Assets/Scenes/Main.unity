@@ -156,9 +156,9 @@ MonoBehaviour:
   - {x: 6.2, y: -0.12, z: -6.2}
   pawnBases:
   - {fileID: 1575640997}
-  - {fileID: 449481816}
-  - {fileID: 875822832}
   - {fileID: 256134013}
+  - {fileID: 875822832}
+  - {fileID: 449481816}
 --- !u!4 &27482695
 Transform:
   m_ObjectHideFlags: 0
@@ -2364,6 +2364,7 @@ GameObject:
   - component: {fileID: 998515157}
   - component: {fileID: 998515156}
   - component: {fileID: 998515158}
+  - component: {fileID: 998515159}
   m_Layer: 0
   m_Name: Ludo Manager
   m_TagString: Untagged
@@ -2413,16 +2414,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3884944409e46b2a96eabeab545a69a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: LudoGame.Runtime::Ludo.LudoAIPlayer
+  playerIndex: 0
+  playerName: 
+  playerType: 0
   ludoGamePlay: {fileID: 998515156}
-  turnLockDuration: 1
+  thinkingDelay: 1
   delay:
     elapsed: 0
-  autoPlay: 1
   captureWeight: 8
   exitBaseWeight: 7
   progressWeight: 5
   safetyWeight: 3
   reachHomeWeight: 10
+--- !u!114 &998515159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 998515155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 969ba602699444f4b149b41e23f28e20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: LudoGame.Runtime::Ludo.LudoGameManager
+  ludoGamePlay: {fileID: 998515156}
+  gameSession: {fileID: 11400000, guid: 478867f89d88c440ca571d28dbde4576, type: 2}
+  players: []
+  onGameStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onTurnChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  onGameEnded:
+    m_PersistentCalls:
+      m_Calls: []
+  autoStartOnAwake: 0
 --- !u!43 &1001606926
 Mesh:
   m_ObjectHideFlags: 0
