@@ -66,21 +66,17 @@ public class LudoGamePlay : MonoBehaviour, ILudoBoard
         }
     }
 
-    public int OffsetPlayerIndex(int playerIndex)
-    {
-        if (PlayerCount == 2 && playerIndex == 1) return 2;
-        return playerIndex;
-    }
+    
 
     public Vector3 GetBasePosition(int playerIndex)
     {
-        var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
+        var offsetPlayerIndex = gameSession.OffsetPlayerIndex(playerIndex);
         return playerSpawner.pawnBasePositions[offsetPlayerIndex];
     }
 
     public Vector3 GetHomeStretchPosition(int playerIndex, int step)
     {
-        var offsetPlayerIndex = OffsetPlayerIndex(playerIndex);
+        var offsetPlayerIndex = gameSession.OffsetPlayerIndex(playerIndex);
         return tileSystem.groupedTiles[offsetPlayerIndex].tileFinal[step].transform.position;
     }
 

@@ -17,7 +17,7 @@ namespace Ludo
         private const byte ExitFromBaseAtRoll = 6;
         private const byte TokensPerPlayer = 4;
         private const byte PlayerTrackOffset = TotalMainTrackTiles / 4; // 13
-        private const byte NoTokenSentToBaseCode = byte.MaxValue;
+        public const byte NoTokenSentToBaseCode = byte.MaxValue;
 
         public const byte Base = BasePosition;
         public const byte MainStart = StartPosition;
