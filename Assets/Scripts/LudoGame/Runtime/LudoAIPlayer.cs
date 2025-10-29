@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using EasyButtons;
 using Spawner.Spawner.Authoring;
 using UnityEngine;
@@ -8,6 +6,10 @@ using Random = UnityEngine.Random;
 
 namespace Ludo
 {
+    /// <summary>
+    /// AI player controller - handles AI decision making and timing only.
+    /// Game logic is delegated to GameSession and LudoGamePlay.
+    /// </summary>
     public class LudoAIPlayer : MonoBehaviour
     {
         [Header("References")]
@@ -35,69 +37,55 @@ namespace Ludo
         {
             if (!autoPlay) return;
             
+            var session = ludoGamePlay.gameSession;
+            if (session.isGameOver) return;
+            
             if (delay.UpdateAndReset(Time.deltaTime, turnLockDuration))
             {
-                Play();
+                PlayTurn();
             }
         }
 
         [Button]
-        public void Play()
+        public void PlayTurn()
         {
-            var gameSession = ludoGamePlay.gameSession;
+            var session = ludoGamePlay.gameSession;
             
-            // Check if player rolled 3 consecutive sixes
-            if (!gameSession.ConsecutiveSixLessThanThree())
+            // Check if rolled 3 consecutive sixes
+            if (!session.ConsecutiveSixLessThanThree())
             {
-                Debug.Log($"<color=orange>Player {gameSession.currentPlayerIndex} rolled 3 consecutive sixes - turn ended</color>");
-                PassPlayer();
+                Debug.Log($"<color=orange>Player {session.currentPlayerIndex} rolled 3 consecutive sixes - turn ended</color>");
+                session.EndTurn();
                 return;
             }
 
-            // Roll the dice
-            var dice = gameSession.RollDice();
-            Debug.Log($"<color=cyan>Player {gameSession.currentPlayerIndex} rolled: {dice}</color>");
+            // Roll dice
+            byte dice = session.RollDice();
+            Debug.Log($"<color=cyan>Player {session.currentPlayerIndex} rolled: {dice}</color>");
             
-            // Try to exit from base if rolled a 6
-            if (dice == LudoBoard.ExitRoll)
+            // Try to exit from base on rolling 6
+            if (dice == LudoBoard.ExitRoll && session.HasTokensInBase(session.currentPlayerIndex))
             {
-                TryExitTokensFromBase(gameSession);
+                if (session.TryExitTokenFromBase(session.currentPlayerIndex))
+                {
+                    Debug.Log($"<color=green>Player {session.currentPlayerIndex} exited token from base</color>");
+                }
             }
             
             // Get movable tokens
-            var movableTokens = ludoGamePlay.GetMovableTokens(gameSession.currentPlayerIndex, dice);
+            var movableTokens = session.GetMovableTokens(session.currentPlayerIndex, dice);
             
             if (movableTokens.Count == 0)
             {
-                Debug.Log($"<color=yellow>Player {gameSession.currentPlayerIndex} has no valid moves</color>");
-                PassPlayer();
+                Debug.Log($"<color=yellow>Player {session.currentPlayerIndex} has no valid moves</color>");
+                session.EndTurn();
+                return;
             }
-            else
-            {
-                gameSession.currentMoveableTokens = movableTokens;
-                
-                // Use smart AI to choose the best token
-                byte bestToken = ChooseBestToken(movableTokens, dice);
-                Perform(gameSession, bestToken, dice);
-            }
-        }
 
-        private void TryExitTokensFromBase(GameSession gameSession)
-        {
-            int playerIndex = gameSession.currentPlayerIndex;
-            int startToken = playerIndex * LudoBoard.Tokens;
-            
-            // Try to exit tokens from base
-            for (int i = 0; i < LudoBoard.Tokens; i++)
-            {
-                int tokenIndex = startToken + i;
-                if (gameSession.board.IsAtBase(tokenIndex))
-                {
-                    ludoGamePlay.GetOutOfBase(tokenIndex);
-                    Debug.Log($"<color=green>Player {playerIndex} exited token {i} from base</color>");
-                    break; // Exit one token per turn
-                }
-            }
+            // Choose and move token
+            session.currentMoveableTokens = movableTokens;
+            byte bestToken = ChooseBestToken(movableTokens, dice);
+            MoveToken(bestToken, dice);
         }
 
         private byte ChooseBestToken(List<byte> movableTokens, byte dice)
@@ -125,41 +113,56 @@ namespace Ludo
 
         private float EvaluateMove(byte tokenIndex, byte dice)
         {
+            var session = ludoGamePlay.gameSession;
             float score = 0f;
-            var board = ludoGamePlay.gameSession.board;
-            int playerIndex = ludoGamePlay.gameSession.currentPlayerIndex;
 
-            // 1. PRIORITY: Can reach home
-            if (CanReachHome(tokenIndex, dice))
+            // 1. HIGHEST PRIORITY: Reach home
+            if (session.CanReachHome(tokenIndex, dice))
             {
                 score += reachHomeWeight * 100f;
                 Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Can reach HOME (+{reachHomeWeight * 100f})");
+                return score; // This is the best possible move
             }
 
             // 2. HIGH PRIORITY: Exit from base
-            if (board.IsAtBase(tokenIndex))
+            if (session.board.IsAtBase(tokenIndex))
             {
                 score += exitBaseWeight * 50f;
                 Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Exits base (+{exitBaseWeight * 50f})");
             }
 
-            // 3. HIGH PRIORITY: Can capture opponent
-            if (CanCaptureOpponent(tokenIndex, dice, out int captureCount))
+            // 3. HIGH PRIORITY: Capture opponent
+            if (session.WillCaptureOpponent(tokenIndex, dice, out int captureCount))
             {
-                score += captureWeight * captureCount * 30f;
-                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Can CAPTURE ({captureCount} opponents) (+{captureWeight * captureCount * 30f})");
+                float captureScore = captureWeight * captureCount * 30f;
+                score += captureScore;
+                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: CAPTURE {captureCount} opponent(s) (+{captureScore})");
             }
 
-            // 4. MEDIUM PRIORITY: Progress toward home
-            float progressScore = CalculateProgressScore(tokenIndex, dice);
+            // 4. MEDIUM PRIORITY: Progress
+            float currentProgress = session.GetTokenProgress(tokenIndex);
+            float futureProgress = currentProgress + dice;
+            float progressScore = (futureProgress / 57f) * progressWeight * 10f;
             score += progressScore;
 
-            // 5. SAFETY: Move to safe tile or avoid danger
-            float safetyScore = CalculateSafetyScore(tokenIndex, dice);
-            score += safetyScore;
+            // 5. SAFETY: Landing on safe tile
+            if (session.WillLandOnSafeTile(tokenIndex, dice))
+            {
+                float safeScore = safetyWeight * 15f;
+                score += safeScore;
+                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Lands on SAFE tile (+{safeScore})");
+            }
 
-            // 6. PENALTY: Staying at base when others are advanced
-            if (board.IsAtBase(tokenIndex) && HasTokensOnBoard(playerIndex))
+            // 6. SAFETY: Escaping danger
+            if (session.IsTokenInDanger(tokenIndex))
+            {
+                float escapeScore = safetyWeight * 10f;
+                score += escapeScore;
+                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Escapes danger (+{escapeScore})");
+            }
+
+            // 7. PENALTY: Leaving base when others are ahead
+            if (session.board.IsAtBase(tokenIndex) && session.HasTokensOnBoard(session.currentPlayerIndex))
             {
                 score -= 20f;
             }
@@ -167,256 +170,61 @@ namespace Ludo
             return score;
         }
 
-        private bool CanReachHome(byte tokenIndex, byte dice)
+        private void MoveToken(byte tokenIndex, byte dice)
         {
-            var board = ludoGamePlay.gameSession.board;
-            byte currentPos = board.TokenPositions[tokenIndex];
+            var session = ludoGamePlay.gameSession;
+            session.tokenToMove = tokenIndex;
             
-            if (board.IsOnHomeStretch(tokenIndex))
-            {
-                int targetPos = currentPos + dice;
-                return targetPos == LudoBoard.Home;
-            }
+            // Execute move through gameplay
+            ludoGamePlay.MoveToken(tokenIndex, dice, out var tokenSentToBase);
+            session.tokenSentToBase = tokenSentToBase;
             
-            if (board.IsOnMainTrack(tokenIndex))
-            {
-                int targetPos = currentPos + dice;
-                int stepsIntoHome = targetPos - LudoBoard.MainEnd;
-                if (stepsIntoHome > 0)
-                {
-                    int homeTarget = LudoBoard.HomeStart + stepsIntoHome - 1;
-                    return homeTarget == LudoBoard.Home;
-                }
-            }
-            
-            return false;
-        }
-
-        private bool CanCaptureOpponent(byte tokenIndex, byte dice, out int captureCount)
-        {
-            captureCount = 0;
-            var board = ludoGamePlay.gameSession.board;
-            int playerIndex = ludoGamePlay.gameSession.currentPlayerIndex;
-            
-            // Simulate the move
-            byte currentPos = board.TokenPositions[tokenIndex];
-            if (board.IsAtBase(tokenIndex) && dice == LudoBoard.ExitRoll)
-            {
-                currentPos = LudoBoard.MainStart;
-            }
-            else
-            {
-                currentPos += dice;
-            }
-
-            // Check if landing position would be on main track (not safe)
-            if (currentPos < LudoBoard.MainStart || currentPos > LudoBoard.MainEnd)
-                return false;
-
-            // Calculate absolute position
-            int landingAbs = board.ToAbsoluteMainTrack(currentPos, playerIndex);
-            
-            // Check if it's a safe tile
-            if (board.Contains(LudoBoard.SafeAbsoluteTiles, (byte)landingAbs))
-                return false;
-
-            // Count opponent tokens at this position
-            for (int i = 0; i < board.TokenPositions.Length; i++)
-            {
-                if (board.PlayerCount == 2)
-                {
-                    int opponent = i / LudoBoard.Tokens;
-                    if (opponent == playerIndex || (playerIndex == 0 && opponent == 1) || (playerIndex == 2 && opponent == 1))
-                        continue;
-                }
-                else
-                {
-                    if (i / LudoBoard.Tokens == playerIndex)
-                        continue;
-                }
-                
-                if (board.IsOnMainTrack(i))
-                {
-                    int opponentAbs = board.GetAbsolutePosition(i);
-                    if (opponentAbs == landingAbs)
-                    {
-                        captureCount++;
-                    }
-                }
-            }
-
-            return captureCount > 0;
-        }
-
-        private float CalculateProgressScore(byte tokenIndex, byte dice)
-        {
-            var board = ludoGamePlay.gameSession.board;
-            byte currentPos = board.TokenPositions[tokenIndex];
-            
-            float baseProgress = 0f;
-            
-            // Calculate how far the token will be from home
-            if (board.IsAtBase(tokenIndex))
-            {
-                baseProgress = 1f; // Just starting
-            }
-            else if (board.IsOnMainTrack(tokenIndex))
-            {
-                baseProgress = currentPos + dice;
-            }
-            else if (board.IsOnHomeStretch(tokenIndex))
-            {
-                baseProgress = 52 + (currentPos - LudoBoard.HomeStart) + dice;
-            }
-
-            float normalizedProgress = baseProgress / 57f; // 57 is max (home position)
-            return progressWeight * normalizedProgress * 10f;
-        }
-
-        private float CalculateSafetyScore(byte tokenIndex, byte dice)
-        {
-            var board = ludoGamePlay.gameSession.board;
-            int playerIndex = ludoGamePlay.gameSession.currentPlayerIndex;
-            float safetyScore = 0f;
-            
-            // Simulate landing position
-            byte currentPos = board.TokenPositions[tokenIndex];
-            byte landingPos = (byte)(currentPos + dice);
-            
-            if (board.IsAtBase(tokenIndex) && dice == LudoBoard.ExitRoll)
-            {
-                landingPos = LudoBoard.MainStart;
-            }
-
-            // Moving to safe tile is good
-            if (landingPos >= LudoBoard.MainStart && landingPos <= LudoBoard.MainEnd)
-            {
-                int landingAbs = board.ToAbsoluteMainTrack(landingPos, playerIndex);
-                if (board.Contains(LudoBoard.SafeAbsoluteTiles, (byte)landingAbs))
-                {
-                    safetyScore += safetyWeight * 15f;
-                    Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Lands on SAFE tile (+{safetyWeight * 15f})");
-                }
-            }
-
-            // Home stretch is always safe
-            if (landingPos > LudoBoard.MainEnd && landingPos < LudoBoard.Home)
-            {
-                safetyScore += safetyWeight * 20f;
-                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Enters HOME STRETCH (+{safetyWeight * 20f})");
-            }
-
-            // Check if current position is in danger
-            if (IsInDanger(tokenIndex))
-            {
-                safetyScore += safetyWeight * 10f; // Moving out of danger
-                Debug.Log($"  Token {tokenIndex % LudoBoard.Tokens}: Escapes danger (+{safetyWeight * 10f})");
-            }
-
-            return safetyScore;
-        }
-
-        private bool IsInDanger(byte tokenIndex)
-        {
-            var board = ludoGamePlay.gameSession.board;
-            int playerIndex = ludoGamePlay.gameSession.currentPlayerIndex;
-            
-            if (!board.IsOnMainTrack(tokenIndex))
-                return false;
-            
-            if (board.IsOnSafeTile(tokenIndex))
-                return false;
-
-            int myAbs = board.GetAbsolutePosition(tokenIndex);
-
-            // Check if any opponent is within striking distance (6 tiles behind)
-            for (int i = 0; i < board.TokenPositions.Length; i++)
-            {
-                if (i / LudoBoard.Tokens == playerIndex)
-                    continue;
-
-                if (!board.IsOnMainTrack(i))
-                    continue;
-
-                int opponentAbs = board.GetAbsolutePosition(i);
-                int distance = (myAbs - opponentAbs + 52) % 52;
-                
-                if (distance > 0 && distance <= 6)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private bool HasTokensOnBoard(int playerIndex)
-        {
-            var board = ludoGamePlay.gameSession.board;
-            int startToken = playerIndex * LudoBoard.Tokens;
-            
-            for (int i = 0; i < LudoBoard.Tokens; i++)
-            {
-                int tokenIndex = startToken + i;
-                if (!board.IsAtBase(tokenIndex))
-                    return true;
-            }
-            
-            return false;
-        }
-
-        private void Perform(GameSession gameSession, byte tokenToMove, byte dice)
-        {
-            gameSession.tokenToMove = tokenToMove;
-            
-            // Move the token
-            ludoGamePlay.MoveToken(tokenToMove, dice, out var tokenSentToBase);
-            gameSession.tokenSentToBase = tokenSentToBase;
-            
+            // Log capture
             if (tokenSentToBase != LudoBoard.NoTokenSentToBaseCode)
             {
-                Debug.Log($"<color=red>CAPTURED! Token {tokenSentToBase} sent back to base!</color>");
+                int capturedPlayer = tokenSentToBase / LudoBoard.Tokens;
+                int capturedTokenOrdinal = tokenSentToBase % LudoBoard.Tokens;
+                Debug.Log($"<color=red>★ CAPTURED! Player {capturedPlayer}'s token {capturedTokenOrdinal} sent to base!</color>");
             }
             
-            // Check if player won
-            if (gameSession.board.HasWon(gameSession.currentPlayerIndex))
+            // Check win condition
+            if (session.CheckWinCondition(session.currentPlayerIndex))
             {
-                Debug.Log($"<color=yellow>★★★ Player {gameSession.currentPlayerIndex} has WON! ★★★</color>");
-                // Handle win condition - you might want to stop the game or show UI
+                Debug.Log($"<color=yellow>★★★ GAME OVER! Player {session.currentPlayerIndex} WINS! ★★★</color>");
                 autoPlay = false;
                 return;
             }
             
-            // End turn if not a six OR if rolled 3 consecutive sixes
-            if (dice != 6 || !gameSession.ConsecutiveSixLessThanThree())
+            // Handle turn passing
+            if (session.ShouldPassTurn(dice))
             {
-                PassPlayer();
+                session.EndTurn();
+                Debug.Log($"<color=white>════ Turn passed to Player {session.currentPlayerIndex} ════</color>");
             }
             else
             {
-                Debug.Log($"<color=lime>Player {gameSession.currentPlayerIndex} rolled a 6 - gets another turn!</color>");
+                Debug.Log($"<color=lime>Player {session.currentPlayerIndex} rolled a 6 - gets another turn!</color>");
             }
         }
 
-        private void PassPlayer()
-        {
-            var gameSession = ludoGamePlay.gameSession;
-            gameSession.EndTurn();
-            Debug.Log($"<color=white>════ Turn passed to Player {gameSession.currentPlayerIndex} ════</color>");
-        }
-
-        // Manual random fallback if needed
+        // Optional: Random strategy for comparison/testing
         [Button("Use Random Strategy")]
-        public void DoRandom()
+        public void UseRandomStrategy()
         {
-            var gameSession = ludoGamePlay.gameSession;
-            var movableTokens = gameSession.currentMoveableTokens;
+            var session = ludoGamePlay.gameSession;
+            var movableTokens = session.currentMoveableTokens;
 
-            if (movableTokens == null || movableTokens.Count == 0) return;
+            if (movableTokens == null || movableTokens.Count == 0) 
+            {
+                Debug.LogWarning("No movable tokens available");
+                return;
+            }
 
             int randomIndex = Random.Range(0, movableTokens.Count);
             byte tokenToMove = movableTokens[randomIndex];
             
-            Debug.Log($"<color=grey>Player {gameSession.currentPlayerIndex} randomly chose token {tokenToMove}</color>");
-            Perform(gameSession, tokenToMove, gameSession.diceValue);
+            Debug.Log($"<color=grey>Random: Player {session.currentPlayerIndex} chose token {tokenToMove % LudoBoard.Tokens}</color>");
+            MoveToken(tokenToMove, session.diceValue);
         }
     }
 }
