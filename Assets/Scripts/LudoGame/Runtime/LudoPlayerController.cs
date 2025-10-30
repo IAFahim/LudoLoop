@@ -76,6 +76,6 @@ namespace Ludo
         Human,
         AI,
         LocalHuman,
-        NetworkHuman
+        NetworkPlayer
     }
 }

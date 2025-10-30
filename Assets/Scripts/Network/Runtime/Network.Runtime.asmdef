@@ -3,7 +3,8 @@
     "rootNamespace": "",
     "references": [
         "endel.nativewebsocket",
-        "EasyButtons"
+        "EasyButtons",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

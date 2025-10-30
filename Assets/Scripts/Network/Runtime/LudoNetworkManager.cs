@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -613,14 +614,18 @@ namespace Network.Runtime
             sessionId = null;
             playerIndex = -1;
         }
-        
+
+
+        public static TMP_Text Text;
         private void Log(string message)
         {
             if (logMessages)
             {
+                Text.text = message;
                 Debug.Log($"[LudoNetwork] {message}");
             }
         }
+        
         
         private void LogError(string message)
         {
