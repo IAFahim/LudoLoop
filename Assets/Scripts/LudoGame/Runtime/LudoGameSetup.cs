@@ -43,10 +43,17 @@ namespace Ludo
         public byte playerPickedToken;
         public bool playerPicked;
 
-        [Button]
-        public void HumanInteraction(byte choose)
+        public void ActiveGamePlay()
         {
-            playerPickedToken = choose;
+            active = true;
+            Setup4Players_1Human3AI();
+        }
+        
+
+        [Button]
+        public void HumanInteraction(int choose)
+        {
+            playerPickedToken = (byte)choose;
             playerPicked = true;
         }
 
@@ -58,23 +65,24 @@ namespace Ludo
             var playerIndex = GameSession.currentPlayerIndex;
             var ludoPlayerController = players[playerIndex];
             var isHuman = ludoPlayerController.playerType == PlayerType.Human;
+    
             if (isHuman)
             {
                 Debug.Log("Player Waiting");
-                if (!playerPicked) return;
-                playerPicked = true;
+                if (!playerPicked) return;  // Wait for human input
             }
 
             byte diceRoll = (byte)Random.Range(1, 7);
             var movableTokens = GameSession.GetMovableTokens(playerIndex, diceRoll);
-            ludoPlayerController.ChooseTokenFrom(movableTokens, diceRoll);
-            if (isHuman)
+    
+            if (isHuman && playerPicked)
             {
-                playerPicked = false;
+                ludoPlayerController.ChooseTokenFrom(movableTokens, diceRoll);
+                playerPicked = false;  // Reset for next turn
             }
-            else
+            else if (!isHuman)
             {
-                playerPicked = true;
+                ludoPlayerController.ChooseTokenFrom(movableTokens, diceRoll);
             }
 
             Debug.Log($"<color=magenta>{playerIndex} chose token {diceRoll}</color>");

@@ -137,8 +137,6 @@ namespace Ludo
         private bool ComputeDestinationFromMainTrack(int tokenIndex, int steps, out byte newPos)
         {
             newPos = tokenPositions[tokenIndex];
-            // Check path blockades on traversed absolute tiles only while on main track
-            if (PathBlockedByOpponent(tokenIndex, steps)) return false;
 
             int current = tokenPositions[tokenIndex];
             int target = current + steps;
@@ -165,30 +163,7 @@ namespace Ludo
             newPos = (byte)target;
             return true;
         }
-
-        private bool PathBlockedByOpponent(int tokenIndex, int steps)
-        {
-            foreach (var abs in EnumerateTraversedAbsoluteTiles(tokenIndex, steps))
-                if (IsTileBlocked(abs, PlayerOf(tokenIndex))) return true;
-            return false;
-        }
-
-        /// Enumerate absolute main‑track tiles this token would step on while still on 1..52 (not including start tile).
-        private IEnumerable<int> EnumerateTraversedAbsoluteTiles(int tokenIndex, int steps)
-        {
-            if (!IsOnMainTrack(tokenIndex)) yield break;
-
-            int currentRel = tokenPositions[tokenIndex]; // 1..52
-            int p = PlayerOf(tokenIndex);
-            int stepsOnMain = Math.Min(steps, TotalMainTrackTiles - currentRel);
-
-            for (int i = 1; i <= stepsOnMain; i++)
-            {
-                byte nextRel = (byte)(currentRel + i);
-                yield return ToAbsoluteMainTrack(nextRel, p);
-            }
-        }
-
+        
         private void CaptureTokensAt(int movedTokenIndex, out byte tokenSentToBase)
         {
             tokenSentToBase = NoTokenSentToBaseCode;
