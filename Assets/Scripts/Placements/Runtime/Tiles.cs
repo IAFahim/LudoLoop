@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,6 +45,20 @@ namespace Placements.Runtime
             }
 
             tiles = totalTiles.ToArray();
+        }
+
+        private void Start()
+        {
+            SetColor();
+        }
+
+        public void SetColor()
+        {
+            for (var i = 0; i < groupedTiles.Length; i++)
+            {
+                var tile = groupedTiles[i];
+                tile.SetColor(i);
+            }
         }
 
 

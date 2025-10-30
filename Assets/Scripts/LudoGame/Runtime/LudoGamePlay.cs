@@ -2,12 +2,18 @@ using EasyButtons;
 using Ludo;
 using Placements.Runtime;
 using UnityEngine;
+using System.Collections;
 
 public class LudoGamePlay : MonoBehaviour
 {
-    [Header("Game Setup")] public GameSession gameSession;
+    [Header("Game Setup")] 
+    public GameSession gameSession;
     public PlayerSpawner playerSpawner;
     [SerializeField] private Tiles tileSystem;
+
+    [Header("Movement Settings")]
+    [SerializeField] private bool useInstantMovement = false;
+    [SerializeField] private float movementDelay = 0.2f;
 
     public GameSession Session => gameSession;
     public bool isPlaying;
@@ -33,6 +39,8 @@ public class LudoGamePlay : MonoBehaviour
                 int tokenIndex = Session.board.TokenIndex(playerIndex, tokenOrdinal);
                 byte logicalPos = Session.board.TokenPositions[tokenIndex];
                 var currentPos = GetPosition(tokenIndex, playerIndex, tokenOrdinal, logicalPos);
+                
+                // Use instant positioning for refresh (setup)
                 MoveTokenToPosition(playerIndex, tokenOrdinal, currentPos);
             }
         }
@@ -95,12 +103,10 @@ public class LudoGamePlay : MonoBehaviour
         return tileSystem.tiles[abs - 1];
     }
 
-
     public void Play(int tokenIndex, int steps, out byte tokenSentToBase)
     {
         gameSession.board.MoveToken(tokenIndex, steps, out tokenSentToBase);
     }
-
 
     public Vector3 GetHomePosition(int playerIndex, int tokenOrdinal)
     {
@@ -109,12 +115,101 @@ public class LudoGamePlay : MonoBehaviour
 
     public void HighlightToken(int playerIndex, int tokenOrdinal, bool highlight)
     {
+        // TODO: Implement highlighting logic
     }
 
+    /// <summary>
+    /// Moves token smoothly to position using PID controller
+    /// </summary>
     public void MoveTokenToPosition(int playerIndex, int tokenOrdinal, Vector3 position)
     {
         if (!isPlaying) return;
-        playerSpawner.tokenBases[playerIndex].Tokens[tokenOrdinal].transform.position = position;
+        
+        var token = playerSpawner.tokenBases[playerIndex].Tokens[tokenOrdinal];
+        var movementController = token.GetComponent<TokenMovementController>();
+        
+        if (movementController == null)
+        {
+            Debug.LogWarning($"Token {token.name} missing TokenMovementController, adding one...");
+            movementController = token.gameObject.AddComponent<TokenMovementController>();
+        }
+
+        if (useInstantMovement)
+        {
+            movementController.TeleportToPosition(position);
+        }
+        else
+        {
+            movementController.SetTargetPosition(position);
+        }
+    }
+
+    /// <summary>
+    /// Instantly moves token to position (used for initialization)
+    /// </summary>
+    public void MoveTokenToPositionInstant(int playerIndex, int tokenOrdinal, Vector3 position)
+    {
+        var token = playerSpawner.tokenBases[playerIndex].Tokens[tokenOrdinal];
+        var movementController = token.GetComponent<TokenMovementController>();
+        
+        if (movementController == null)
+        {
+            movementController = token.gameObject.AddComponent<TokenMovementController>();
+        }
+        
+        movementController.TeleportToPosition(position);
+    }
+
+    /// <summary>
+    /// Moves token along a path of positions (for multi-step moves)
+    /// </summary>
+    public void MoveTokenAlongPath(int playerIndex, int tokenOrdinal, Vector3[] waypoints)
+    {
+        if (!isPlaying || waypoints == null || waypoints.Length == 0) return;
+        
+        StartCoroutine(MoveAlongPathCoroutine(playerIndex, tokenOrdinal, waypoints));
+    }
+
+    private IEnumerator MoveAlongPathCoroutine(int playerIndex, int tokenOrdinal, Vector3[] waypoints)
+    {
+        var token = playerSpawner.tokenBases[playerIndex].Tokens[tokenOrdinal];
+        var movementController = token.GetComponent<TokenMovementController>();
+        
+        if (movementController == null)
+        {
+            Debug.LogError("TokenMovementController not found!");
+            yield break;
+        }
+
+        foreach (var waypoint in waypoints)
+        {
+            movementController.SetTargetPosition(waypoint);
+            
+            // Wait until token reaches the waypoint
+            yield return new WaitUntil(() => movementController.HasReachedTarget);
+            
+            // Small delay between waypoints
+            yield return new WaitForSeconds(movementDelay);
+        }
+    }
+
+    /// <summary>
+    /// Gets the path from current position to target position
+    /// </summary>
+    public Vector3[] GetMovementPath(int playerIndex, int tokenOrdinal, int steps)
+    {
+        int tokenIndex = Session.board.TokenIndex(playerIndex, tokenOrdinal);
+        byte currentLogicalPos = Session.board.TokenPositions[tokenIndex];
+        
+        Vector3[] path = new Vector3[steps];
+        
+        for (int i = 0; i < steps; i++)
+        {
+            byte nextLogicalPos = (byte)(currentLogicalPos + i + 1);
+            path[i] = GetPosition(tokenIndex, playerIndex, tokenOrdinal, nextLogicalPos);
+        }
+        
+        return path;
     }
 
     public void RestartGame()
