@@ -7351,6 +7351,117 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1947309189}
   m_CullTransparentMesh: 1
+--- !u!1 &1964965472
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1964965476}
+  - component: {fileID: 1964965474}
+  - component: {fileID: 1964965473}
+  - component: {fileID: 1964965477}
+  m_Layer: 0
+  m_Name: Network
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1964965473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964965472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 343f6c41009044bd3ad4f68b937e6a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Network.Runtime::LudoGameExample
+  networkManager: {fileID: 1964965477}
+--- !u!114 &1964965474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964965472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 237bc317621c45d39349ec90cb54f26e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Network.Runtime::Network.UnityMainThreadDispatcher
+--- !u!4 &1964965476
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964965472}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1964965477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964965472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a91ab14d7d764a7990759dca005cfa8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Network.Runtime::Network.Runtime.LudoNetworkManager
+  serverUrl: ws://localhost:8080
+  playerName: Unity Player
+  autoConnect: 1
+  logMessages: 1
+  onConnected:
+    m_PersistentCalls:
+      m_Calls: []
+  onDisconnected:
+    m_PersistentCalls:
+      m_Calls: []
+  onError:
+    m_PersistentCalls:
+      m_Calls: []
+  onQueueUpdate:
+    m_PersistentCalls:
+      m_Calls: []
+  onMatchFound:
+    m_PersistentCalls:
+      m_Calls: []
+  onDiceRolled:
+    m_PersistentCalls:
+      m_Calls: []
+  onTokenMoved:
+    m_PersistentCalls:
+      m_Calls: []
+  onGameOver:
+    m_PersistentCalls:
+      m_Calls: []
+  onGameState:
+    m_PersistentCalls:
+      m_Calls: []
+  onPlayerDisconnected:
+    m_PersistentCalls:
+      m_Calls: []
+  onPlayerLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  onPlayerReconnected:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1967608179
 GameObject:
   m_ObjectHideFlags: 0
@@ -8432,3 +8543,4 @@ SceneRoots:
   - {fileID: 435002665}
   - {fileID: 646197380}
   - {fileID: 2129929158}
+  - {fileID: 1964965476}

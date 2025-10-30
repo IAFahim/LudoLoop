@@ -17,6 +17,7 @@ namespace DiceRoll.Runtime
         [Header("Configuration")] public RandomRollConfig randomRollConfig = RandomRollConfig.Default();
         public TurnSettings turnSettings = TurnSettings.Default();
         public HandConfig handConfig = HandConfig.Default();
+        public HandConfig[] handConfigs;
 
         public UnityEvent<byte> OnDiceSettled;
 
@@ -38,6 +39,11 @@ namespace DiceRoll.Runtime
         {
             rb = GetComponent<Rigidbody>();
             randomGenerator = new UnityRandomGenerator();
+        }
+
+        public HandConfig GetHandConfig(int index)
+        {
+            return handConfig = handConfigs[index];
         }
 
         public void SetRandomGenerator(IRandomGenerator generator)

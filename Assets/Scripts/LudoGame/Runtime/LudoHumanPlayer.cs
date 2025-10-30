@@ -16,6 +16,13 @@ namespace Ludo
 
         public override void ChooseTokenFrom(List<byte> movableTokens, byte diceValue)
         {
+            if (movableTokens.Count == 0)
+            {
+                EndTurn();
+                return;
+            }
+            var range = Random.Range(0, 4);
+            ExecuteMove((byte)range, diceValue);
         }
 
         protected override void OnGameEnd()

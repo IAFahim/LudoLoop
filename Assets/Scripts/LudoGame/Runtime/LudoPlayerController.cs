@@ -23,7 +23,7 @@ namespace Ludo
         
         public abstract void ChooseTokenFrom(List<byte> movableTokens, byte diceValue);
         
-        public void ExecuteMove(byte tokenIndex, byte dice)
+        protected void ExecuteMove(byte tokenIndex, byte dice)
         {
             currentToken = tokenIndex;
             Session.tokenToMove = tokenIndex;

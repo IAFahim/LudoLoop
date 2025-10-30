@@ -34,6 +34,11 @@ namespace Ludo
         
         public override void ChooseTokenFrom(List<byte> movableTokens, byte diceValue)
         {
+            if (movableTokens.Count == 0)
+            {
+                EndTurn();
+                return;
+            }
             byte bestToken = ChooseBestToken(movableTokens, diceValue);
             ExecuteMove(bestToken, diceValue);
         }
@@ -83,7 +88,6 @@ namespace Ludo
             }
 
             int tokenOrdinal = bestToken % LudoBoard.Tokens;
-            Debug.Log($"<color=magenta>{playerName} chose token {tokenOrdinal} (score: {bestScore:F2})</color>");
             return bestToken;
         }
 

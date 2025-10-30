@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using EasyButtons;
+using Spawner.Spawner.Authoring;
 using UnityEngine;
 using UnityEngine.Events;
+using Random = UnityEngine.Random;
 
 namespace Ludo
 {
@@ -33,6 +36,48 @@ namespace Ludo
             }
 
             onGameStarted?.Invoke();
+        }
+
+        public Delay delay;
+        public bool active;
+        public byte playerPickedToken;
+        public bool playerPicked;
+
+        [Button]
+        public void HumanInteraction(byte choose)
+        {
+            playerPickedToken = choose;
+            playerPicked = true;
+        }
+
+        private void Update()
+        {
+            if (!active) return;
+            if (!delay.UpdateAndReset(Time.deltaTime, 1)) return;
+            ludoGamePlay.RefreshState();
+            var playerIndex = GameSession.currentPlayerIndex;
+            var ludoPlayerController = players[playerIndex];
+            var isHuman = ludoPlayerController.playerType == PlayerType.Human;
+            if (isHuman)
+            {
+                Debug.Log("Player Waiting");
+                if (!playerPicked) return;
+                playerPicked = true;
+            }
+
+            byte diceRoll = (byte)Random.Range(1, 7);
+            var movableTokens = GameSession.GetMovableTokens(playerIndex, diceRoll);
+            ludoPlayerController.ChooseTokenFrom(movableTokens, diceRoll);
+            if (isHuman)
+            {
+                playerPicked = false;
+            }
+            else
+            {
+                playerPicked = true;
+            }
+
+            Debug.Log($"<color=magenta>{playerIndex} chose token {diceRoll}</color>");
         }
 
 

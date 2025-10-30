@@ -1,7 +1,9 @@
 {
     "name": "Network.Runtime",
+    "rootNamespace": "",
     "references": [
-        "endel.nativewebsocket"
+        "endel.nativewebsocket",
+        "EasyButtons"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
