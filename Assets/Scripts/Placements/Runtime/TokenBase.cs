@@ -1,32 +1,50 @@
+using System;
 using Placements.Runtime;
 using UnityEngine;
+using EasyButtons;
 
 public class TokenBase : MonoBehaviour
 {
     [SerializeField]
     private TokenData tokenData;
+    public Vector3[] tokenBasePositions;
 
     [SerializeField] private PlacementConfig config = PlacementConfig.Default();
     [SerializeField] private LudoToken[] tokens;
-    [SerializeField] private Vector3[] tokenBasePositions;
+    [SerializeField] private int tokenId;
+    
 
     public LudoToken[] Tokens => tokens;
 
-    public Vector3[] BasePositions => tokenBasePositions;
-
-    public LudoToken[] Place(int teamId)
+    private void Start()
     {
-        tokenBasePositions =
-            CircularPlacement.SpawnPawns(config, transform.position, tokenData.prefab, out GameObject[] spawnedPawns);
-        tokens = new LudoToken[4];
-        for (var i = 0; i < spawnedPawns.Length; i++)
+        foreach (var ludoToken in tokens)
         {
-            var tokenColor = spawnedPawns[i].GetComponent<LudoToken>();
-            tokenColor.SetTokenIndex(teamId);
-            tokens[i] = tokenColor;
+            ludoToken.SetColor(tokenId);
         }
+    }
 
-        return tokens;
+    [Button]
+    private void GetPosition()
+    {
+        tokenBasePositions = CircularPlacement.SpawnPawns(config, transform.position);
+    }
+
+
+    [Button]
+    public void Place()
+    {
+        tokenBasePositions = CircularPlacement.SpawnPawns(config, transform.position);
+        tokens = new LudoToken[4];
+        for (var i = 0; i < tokenBasePositions.Length; i++)
+        {
+            var tokenPos = tokenBasePositions[i];
+            var token = Instantiate(tokenData.prefab, tokenPos, Quaternion.identity);
+            token.transform.parent = transform;
+            var ludoToken = token.GetComponent<LudoToken>();
+            ludoToken.SetTokenIndex(tokenId);
+            tokens[i] = ludoToken;
+        }
     }
 
     private void OnDrawGizmos()

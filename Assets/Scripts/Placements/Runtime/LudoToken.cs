@@ -30,10 +30,9 @@ namespace Placements.Runtime
         public void SetTokenIndex(int index)
         {
             tokenIndex = index;
-            SetColor(index);
         }
 
-        private void SetColor(int index)
+        public void SetColor(int index)
         {
             selfRenderer.GetPropertyBlock(_propBlock);
             _propBlock.SetColor(Color, playerTeamTokenColors[index]);

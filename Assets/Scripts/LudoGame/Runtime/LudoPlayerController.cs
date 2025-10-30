@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,40 +13,24 @@ namespace Ludo
         public int playerIndex;
         public string playerName;
         public PlayerType playerType;
+        public byte currentToken;
         
         [Header("References")]
         public LudoGamePlay ludoGamePlay;
-        
         protected GameSession Session => ludoGamePlay.gameSession;
         public bool IsMyTurn => Session.currentPlayerIndex == playerIndex;
+        public abstract void OnTurn();
         
-        protected virtual void OnValidate()
+        public abstract void ChooseTokenFrom(List<byte> movableTokens, byte diceValue);
+        
+        public void ExecuteMove(byte tokenIndex, byte dice)
         {
-            if (ludoGamePlay == null)
-                ludoGamePlay = GetComponent<LudoGamePlay>();
-        }
-
-        /// <summary>
-        /// Called when it's this player's turn to act
-        /// </summary>
-        public abstract void OnTurnStart();
-        
-        /// <summary>
-        /// Called when player needs to choose which token to move
-        /// </summary>
-        public abstract void OnChooseToken(List<byte> movableTokens, byte diceValue);
-        
-        /// <summary>
-        /// Executes the token move
-        /// </summary>
-        protected void ExecuteMove(byte tokenIndex, byte dice)
-        {
-            var session = Session;
-            session.tokenToMove = tokenIndex;
+            currentToken = tokenIndex;
+            Session.tokenToMove = tokenIndex;
             
             // Move token
-            ludoGamePlay.MoveToken(tokenIndex, dice, out var tokenSentToBase);
-            session.tokenSentToBase = tokenSentToBase;
+            ludoGamePlay.Play(tokenIndex, dice, out var tokenSentToBase);
+            Session.tokenSentToBase = tokenSentToBase;
             
             // Log capture
             if (tokenSentToBase != LudoBoard.NoTokenSentToBaseCode)
@@ -56,26 +41,33 @@ namespace Ludo
             }
             
             // Check win
-            if (session.CheckWinCondition(session.currentPlayerIndex))
+            if (Session.CheckWinCondition(Session.currentPlayerIndex))
             {
                 Debug.Log($"<color=yellow>★★★ {playerName} (Player {playerIndex}) WINS! ★★★</color>");
                 OnGameEnd();
                 return;
             }
             
-            // Handle turn passing
-            if (session.ShouldPassTurn(dice))
+            if (Session.ShouldPassTurn(dice))
             {
-                session.EndTurn();
+                EndTurn();
+                return;
             }
-            else
-            {
-                OnTurnStart();
-            }
+
+            OnTurn();
+        }
+
+
+        protected virtual void EndTurn()
+        {
+            
+            ludoGamePlay.EndTurn(playerIndex);
         }
         
+
         protected virtual void OnGameEnd()
         {
+            ludoGamePlay.EndTurn(playerIndex);
         }
     }
 

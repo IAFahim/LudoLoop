@@ -18,21 +18,25 @@ namespace Ludo
         [Range(0f, 10f)] public float safetyWeight = 3f;
         [Range(0f, 10f)] public float reachHomeWeight = 10f;
         
-        public override void OnTurnStart()
+        public override void OnTurn()
         {
             if (!IsMyTurn) return;
             
             Debug.Log($"<color=cyan>═══ {playerName} (AI)'s Turn ═══</color>");
-            
-            // Check consecutive sixes
+            ProcessTurn();
             if (!Session.ConsecutiveSixLessThanThree())
             {
                 Debug.Log($"<color=orange>{playerName} rolled 3 consecutive sixes - turn ended</color>");
-                Session.EndTurn();
+                
                 return;
             }
         }
         
+        public override void ChooseTokenFrom(List<byte> movableTokens, byte diceValue)
+        {
+            byte bestToken = ChooseBestToken(movableTokens, diceValue);
+            ExecuteMove(bestToken, diceValue);
+        }
 
         private void ProcessTurn()
         {
@@ -54,14 +58,10 @@ namespace Ludo
             }
             
             Session.currentMoveableTokens = movableTokens;
-            OnChooseToken(movableTokens, dice);
+            ChooseTokenFrom(movableTokens, dice);
         }
 
-        public override void OnChooseToken(List<byte> movableTokens, byte diceValue)
-        {
-            byte bestToken = ChooseBestToken(movableTokens, diceValue);
-            ExecuteMove(bestToken, diceValue);
-        }
+        
 
         private byte ChooseBestToken(List<byte> movableTokens, byte dice)
         {
@@ -134,19 +134,6 @@ namespace Ludo
             }
 
             return score;
-        }
-
-
-        [Button("Force Take Turn (Debug)")]
-        public void ForceTakeTurn()
-        {
-            if (!IsMyTurn)
-            {
-                Debug.LogWarning("Not this AI's turn!");
-                return;
-            }
-            
-            ProcessTurn();
         }
     }
 }

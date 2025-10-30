@@ -35,18 +35,15 @@ namespace Placements.Runtime
 
         public static Vector3[] SpawnPawns(
             in PlacementConfig config,
-            Vector3 origin,
-            GameObject prefab,
-            out GameObject[] outPawns)
+            Vector3 origin
+            )
         {
-            outPawns = new GameObject[4];
             var positions = new Vector3[4];
             float angleGap = 360f / config.count;
             for (int i = 0; i < config.count; i++)
             {
                 float angle = config.startAngle + angleGap * i;
                 Vector3 pos = CalculatePosition(config.radius, angle, config.height, origin);
-                outPawns[i] = UnityEngine.Object.Instantiate(prefab, pos, config.rotation);
                 positions[i] = pos;
             }
 
