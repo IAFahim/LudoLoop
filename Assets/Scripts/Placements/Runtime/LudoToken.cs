@@ -13,7 +13,7 @@ namespace Placements.Runtime
         public Material blinkMaterial;
 
         private MaterialPropertyBlock _propBlock;
-        private static readonly int Color = Shader.PropertyToID("_Color");
+        private static readonly int Color = Shader.PropertyToID("_BaseColor");
 
         public UnityEvent<int> onTokenClicked;
 
